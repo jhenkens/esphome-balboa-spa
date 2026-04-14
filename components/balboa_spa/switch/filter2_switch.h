@@ -20,7 +20,7 @@ namespace esphome
             void write_state(bool state) override;
 
         private:
-            BalboaSpa *spa;
+            BalboaSpa *spa_;
         };
 
     } // namespace balboa_spa

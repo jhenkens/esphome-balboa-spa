@@ -1,7 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import climate
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_UNIT_OF_MEASUREMENT, UNIT_CELSIUS, UNIT_FAHRENHEIT, CONF_VISUAL
 
 from .. import (
     CONF_SPA_ID,
@@ -14,12 +14,15 @@ AUTO_LOAD = ["climate"]
 
 BalboaSpaThermostat = balboa_spa_ns.class_('BalboaSpaThermostat', cg.Component, climate.Climate)
 
-CONFIG_SCHEMA = (
-    climate.climate_schema(BalboaSpaThermostat).extend(
+CONFIG_SCHEMA = cv.ENTITY_BASE_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(BalboaSpaThermostat),
         cv.GenerateID(CONF_SPA_ID): cv.use_id(BalboaSpa),
-    })
+        cv.Optional(CONF_UNIT_OF_MEASUREMENT): cv.one_of(
+            UNIT_CELSIUS, UNIT_FAHRENHEIT
+        ),
+        cv.Optional(CONF_VISUAL, default={}): cv.Schema({}),
+    }
 )
 
 async def to_code(config):

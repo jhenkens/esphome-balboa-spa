@@ -7,12 +7,12 @@ namespace esphome
 
         void ClearReminderButton::set_parent(BalboaSpa *parent)
         {
-            parent_ = parent;
+            spa_ = parent;
         }
 
         void ClearReminderButton::press_action()
         {
-            parent_->clear_reminder();
+            spa_->clear_reminder();
         }
 
     } // namespace balboa_spa

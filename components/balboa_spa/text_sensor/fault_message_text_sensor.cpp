@@ -19,7 +19,7 @@ namespace esphome
             // Check if the fault message has changed
             if (spaFaultLog->fault_message != last_message_)
             {
-                this->publish_state(spaFaultLog->fault_message);
+                this->publish_state(std::string(spaFaultLog->fault_message));
                 last_message_ = spaFaultLog->fault_message;
             }
         }

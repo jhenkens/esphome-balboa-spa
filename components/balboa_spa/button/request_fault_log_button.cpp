@@ -9,13 +9,13 @@ namespace esphome
 
         void RequestFaultLogButton::set_parent(BalboaSpa *parent)
         {
-            parent_ = parent;
+            spa_ = parent;
         }
 
         void RequestFaultLogButton::press_action()
         {
             ESP_LOGD(TAG, "Request fault log button pressed");
-            parent_->request_fault_log_update();
+            spa_->request_fault_log_update();
             ESP_LOGI(TAG, "Fault log update requested");
         }
 

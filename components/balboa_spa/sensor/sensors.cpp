@@ -10,12 +10,36 @@ namespace esphome
 
         void BalboaSpaSensors::set_parent(BalboaSpa *parent)
         {
-            parent->register_listener([this](SpaState *spaState)
-                                      { this->update(spaState); });
+            bool fahrenheit = this->get_unit_of_measurement_ref().compare("°F") == 0;
+            spa_temp_init(parent, fahrenheit, false);
         }
 
-        void BalboaSpaSensors::update(SpaState *spaState)
+        void BalboaSpaSensors::update()
         {
+            if (sensor_type == BalboaSpaSensorType::TIME_SINCE_LAST_STATUS)
+            {
+                uint32_t age_ms = spa_->get_time_since_last_status_ms();
+                float age_s = age_ms / 1000.0f;
+                if (age_s < 120.0f)
+                    age_s = 0.0f;
+                if (age_s != this->state)
+                    this->publish_state(age_s);
+                return;
+            }
+
+            const SpaState *spaState = spa_->get_current_state();
+            if (sensor_type == BalboaSpaSensorType::CURRENT_TEMP || sensor_type == BalboaSpaSensorType::TARGET_TEMP)
+            {
+                float val_c = sensor_type == BalboaSpaSensorType::CURRENT_TEMP ? spaState->current_temp : spaState->target_temp;
+                if (!std::isnan(val_c))
+                {
+                    float display = to_display(val_c);
+                    if (display != this->state)
+                        this->publish_state(display);
+                }
+                return;
+            }
+
             uint8_t sensor_state_value;
 
             switch (sensor_type)
@@ -30,31 +54,30 @@ namespace esphome
                 sensor_state_value = spaState->circulation;
                 break;
             case BalboaSpaSensorType::RESTMODE:
-                sensor_state_value = spaState->rest_mode;
-                if (sensor_state_value == 254)
-                {
-                    // This indicate no value
+                if (spaState->rest_mode == HeatingMode::NOT_YET_RECEIVED)
                     return;
-                }
+                sensor_state_value = (uint8_t)spaState->rest_mode;
                 break;
             case BalboaSpaSensorType::HEATSTATE:
                 sensor_state_value = spaState->heat_state;
                 if (sensor_state_value == 254)
-                {
-                    // no value
                     return;
-                }
                 break;
+            case BalboaSpaSensorType::SPA_TEMP_SCALE:
+            {
+                TEMP_SCALE scale = spa_->get_spa_temp_scale();
+                if (scale == TEMP_SCALE::UNKNOWN)
+                    return;
+                sensor_state_value = static_cast<uint8_t>(scale);
+                break;
+            }
             default:
                 ESP_LOGD(TAG, "Spa/Sensors/UnknownSensorType: SensorType Number: %d", sensor_type);
-                // Unknown enum value. Ignore
                 return;
             }
 
             if (this->state != sensor_state_value)
-            {
                 this->publish_state(sensor_state_value);
-            }
         }
     }
 }

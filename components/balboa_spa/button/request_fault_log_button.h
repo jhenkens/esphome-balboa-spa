@@ -17,7 +17,7 @@ namespace esphome
             void press_action() override;
 
         private:
-            BalboaSpa *parent_;
+            BalboaSpa *spa_;
         };
 
     } // namespace balboa_spa

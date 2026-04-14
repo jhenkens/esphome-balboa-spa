@@ -2,6 +2,7 @@
 
 #include "esphome/components/water_heater/water_heater.h"
 #include "../balboaspa.h"
+#include "../spa_temperature_base.h"
 
 namespace esphome
 {
@@ -9,23 +10,18 @@ namespace esphome
   {
 
     // Modes:
-    //   OFF         → rest_mode=1 (sleep/rest, energy-saving standby)
-    //   ECO         → rest_mode=0, highrange=0 (ready, standard temp range)
-    //   PERFORMANCE → rest_mode=0, highrange=1 (ready, high temp range)
+    //   OFF         → rest_mode=REST (sleep/rest, energy-saving standby)
+    //   ECO         → rest_mode=READY, highrange=0 (ready, standard temp range)
+    //   ELECTRIC → rest_mode=READY, highrange=1 (ready, high temp range)
 
-    class BalboaSpaWaterHeater : public water_heater::WaterHeater
+    class BalboaSpaWaterHeater : public water_heater::WaterHeater, public SpaTemperatureBase
     {
     public:
-      BalboaSpaWaterHeater()
-      {
-        spa = nullptr;
-        last_update_time = 0;
-        setup_complete_ = false;
-      };
+      BalboaSpaWaterHeater() {};
 
-      void setup();
-      void update(SpaState *spaState);
+      void update() override;
       void set_parent(BalboaSpa *parent);
+      void update_traits() override;
 
       water_heater::WaterHeaterCallInternal make_call() override
       {
@@ -35,11 +31,8 @@ namespace esphome
     protected:
       void control(const water_heater::WaterHeaterCall &call) override;
       water_heater::WaterHeaterTraits traits() override;
+      water_heater::WaterHeaterTraits traits_ = water_heater::WaterHeaterTraits();
 
-    private:
-      BalboaSpa *spa;
-      uint32_t last_update_time;
-      bool setup_complete_;
     };
 
   } // namespace balboa_spa

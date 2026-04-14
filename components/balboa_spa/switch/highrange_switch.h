@@ -13,14 +13,14 @@ namespace esphome
     {
     public:
       HighrangeSwitch() {};
-      void update(SpaState *spaState);
+      void update();
       void set_parent(BalboaSpa *parent);
 
     protected:
       void write_state(bool state) override;
 
     private:
-      BalboaSpa *spa;
+      BalboaSpa *spa_;
     };
 
   } // namespace balboa_spa

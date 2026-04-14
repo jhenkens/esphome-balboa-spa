@@ -15,18 +15,19 @@ namespace esphome
             JetSwitchBase(const char *tag, const char *jet_name)
                 : JetToggleComponentBase(tag, jet_name) {};
 
-            void update(const SpaState *spaState);
+            void update();  // sync ESPHome ← spa
             void set_parent(BalboaSpa *parent);
-            void set_discard_updates(uint8_t value) { JetToggleComponentBase::set_discard_updates(value); }
             void set_max_toggle_attempts(uint8_t value) { JetToggleComponentBase::set_max_toggle_attempts(value); }
+            void set_on_level(uint8_t value) { on_level_ = value; }
 
         protected:
             void write_state(bool state) override;
-            virtual double get_jet_state(const SpaState *spaState) = 0;
-            virtual void toggle_jet() = 0;
+            virtual uint8_t get_jet_state(const SpaState *spaState) = 0;
+            virtual void toggle_jet(std::function<void()> on_sent) = 0;
 
         private:
-            int current_switch_state_ = 0; // 0=OFF, >0=ON for switch
+            uint8_t current_switch_state_ = 0; // 0=OFF, >0=ON for switch
+            uint8_t on_level_ = 1;         // spa state value that means ON (1=low, 2=high)
         };
 
     } // namespace balboa_spa

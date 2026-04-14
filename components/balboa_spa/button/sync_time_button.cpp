@@ -10,7 +10,7 @@ namespace esphome
 
         void SyncTimeButton::set_parent(BalboaSpa *parent)
         {
-            parent_ = parent;
+            spa_ = parent;
         }
 
         void SyncTimeButton::press_action()
@@ -28,13 +28,10 @@ namespace esphome
             }
 
             // Set the spa time
-            parent_->set_hour(time_info->tm_hour);
-            parent_->set_minute(time_info->tm_min);
-            ESP_LOGI(TAG, "Spa time sync triggered: %02d:%02d", time_info->tm_hour, time_info->tm_min);
+            spa_->set_time(time_info->tm_hour, time_info->tm_min);
             
             // Request spa settings update to refresh the display
-            parent_->request_config_update();
-            ESP_LOGD(TAG, "Requested spa config update after time sync");
+            spa_->request_config_update();
         }
 
     } // namespace balboa_spa

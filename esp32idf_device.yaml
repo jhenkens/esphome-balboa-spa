@@ -6,5 +6,6 @@ esphome:
 
 esp32:
   board: lolin_s2_mini
-  framework: 
+  variant: esp32s2
+  framework:
     type: esp-idf

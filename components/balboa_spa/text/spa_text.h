@@ -15,13 +15,13 @@ namespace esphome
     public:
       SpaTimeText() = default;
       void set_parent(BalboaSpa *parent);
-      void update_from_spa_state(SpaState *state);
+      void update();
 
     protected:
       void control(const std::string &value) override;
       
     private:
-      BalboaSpa *parent_;
+      BalboaSpa *spa_;
       bool updating_from_spa_ = false;
       bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
     };
@@ -37,7 +37,7 @@ namespace esphome
       void control(const std::string &value) override;
       
     private:
-      BalboaSpa *parent_;
+      BalboaSpa *spa_;
       bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
     };
 
@@ -52,7 +52,7 @@ namespace esphome
       void control(const std::string &value) override;
       
     private:
-      BalboaSpa *parent_;
+      BalboaSpa *spa_;
       bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
     };
 
@@ -67,7 +67,7 @@ namespace esphome
       void control(const std::string &value) override;
       
     private:
-      BalboaSpa *parent_;
+      BalboaSpa *spa_;
       bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
     };
 
@@ -82,7 +82,7 @@ namespace esphome
       void control(const std::string &value) override;
       
     private:
-      BalboaSpa *parent_;
+      BalboaSpa *spa_;
       bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
     };
 

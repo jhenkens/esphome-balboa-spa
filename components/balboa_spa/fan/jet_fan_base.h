@@ -20,20 +20,19 @@ namespace esphome
             JetFanBase(const char *tag, const char *jet_name)
                 : JetToggleComponentBase(tag, jet_name) {};
 
-            void update(const SpaState *spaState);
+            void update();  // sync ESPHome ← spa
             void set_parent(BalboaSpa *parent);
             void set_max_toggle_attempts(uint8_t value) { JetToggleComponentBase::set_max_toggle_attempts(value); }
-            void set_discard_updates(uint8_t value) { JetToggleComponentBase::set_discard_updates(value); }
 
             fan::FanTraits get_traits() override;
 
         protected:
             void control(const fan::FanCall &call) override;
-            virtual double get_jet_state(const SpaState *spaState) = 0;
-            virtual void toggle_jet() = 0;
+            virtual uint8_t get_jet_state(const SpaState *spaState) = 0;
+            virtual void toggle_jet(std::function<void()> on_sent) = 0;
 
         private:
-            int current_fan_state = 0; // 0=OFF, 1=LOW, 2=HIGH
+            uint8_t current_fan_state = 0; // 0=OFF, 1=LOW, 2=HIGH
         };
 
     } // namespace balboa_spa

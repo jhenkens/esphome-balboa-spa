@@ -1,44 +1,44 @@
-#include "light2_light.h"
+#include "spa_light.h"
 
 namespace esphome
 {
     namespace balboa_spa
     {
-        light::LightTraits Light2Light::get_traits()
+        light::LightTraits SpaLight::get_traits()
         {
             auto traits = light::LightTraits();
             traits.set_supported_color_modes({light::ColorMode::ON_OFF});
             return traits;
         }
 
-        void Light2Light::write_state(light::LightState *state)
+        void SpaLight::write_state(light::LightState *state)
         {
             bool binary;
             state->current_values_as_binary(&binary);
 
             SpaState *spaState = spa_->get_current_state();
-            if (spaState->light2 != binary)
+            if (spaState->lights[index_] != binary)
             {
-                spa_->toggle_light2();
+                spa_->toggle_light(index_ + 1);
             }
         }
 
-        void Light2Light::set_parent(BalboaSpa *parent)
+        void SpaLight::set_parent(BalboaSpa *parent)
         {
             spa_ = parent;
-            parent->register_listener([this](SpaState *spaState)
-                                      { this->update(spaState); });
+            parent->register_listener([this]() { this->update(); });
         }
 
-        void Light2Light::update(const SpaState *spaState)
+        void SpaLight::update()
         {
-            if (this->last_state_ != spaState->light2)
+            bool light_on = spa_->get_current_state()->lights[index_];
+            if (this->last_state_ != light_on)
             {
-                this->last_state_ = spaState->light2;
+                this->last_state_ = light_on;
                 if (this->state_ != nullptr)
                 {
                     auto call = this->state_->make_call();
-                    call.set_state(spaState->light2);
+                    call.set_state(light_on);
                     call.set_save(false);
                     call.perform();
                 }

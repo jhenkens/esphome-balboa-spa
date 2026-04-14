@@ -4,13 +4,14 @@
 
 #include "esphome/components/sensor/sensor.h"
 #include "../balboaspa.h"
+#include "../spa_temperature_base.h"
 
 namespace esphome
 {
   namespace balboa_spa
   {
 
-    class BalboaSpaSensors : public sensor::Sensor
+    class BalboaSpaSensors : public sensor::Sensor, public SpaTemperatureBase
     {
     public:
       enum class BalboaSpaSensorType : uint8_t
@@ -20,11 +21,16 @@ namespace esphome
         CIRCULATION = 3,
         RESTMODE = 4,
         HEATSTATE = 5,
+        CURRENT_TEMP = 6,
+        TARGET_TEMP = 7,
+        SPA_TEMP_SCALE = 8,
+        TIME_SINCE_LAST_STATUS = 9,
       };
 
     public:
       BalboaSpaSensors() {};
-      void update(SpaState *spaState);
+      void update() override;
+      void update_traits() override {};
 
       void set_parent(BalboaSpa *parent);
       void set_sensor_type(BalboaSpaSensorType _type) { sensor_type = _type; }

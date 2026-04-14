@@ -7,15 +7,13 @@ namespace esphome
 
         void SpaTimeTextSensor::set_parent(BalboaSpa *parent)
         {
-            parent->register_listener(
-                [this](SpaState *spaState)
-                {
-                    this->update(spaState);
-                });
+            spa_ = parent;
+            parent->register_listener([this]() { this->update(); });
         }
 
-        void SpaTimeTextSensor::update(SpaState *spaState)
+        void SpaTimeTextSensor::update()
         {
+            const SpaState *spaState = spa_->get_current_state();
             // Check if time has changed
             if (spaState->hour != last_hour_ || spaState->minutes != last_minutes_)
             {

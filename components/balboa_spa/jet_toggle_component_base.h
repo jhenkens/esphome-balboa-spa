@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "balboaspa.h"
+#include <functional>
 
 namespace esphome
 {
@@ -22,7 +23,6 @@ namespace esphome
 
             void set_parent(BalboaSpa *parent);
             void set_max_toggle_attempts(uint8_t value) { this->max_toggle_attempts = value; }
-            void set_discard_updates(uint8_t value) { this->discard_updates_config = value; }
 
         protected:
             /**
@@ -30,12 +30,13 @@ namespace esphome
              * @param spaState Current spa state
              * @return Current jet state (0=OFF, 1=LOW, 2=HIGH)
              */
-            virtual double get_jet_state(const SpaState *spaState) = 0;
+            virtual uint8_t get_jet_state(const SpaState *spaState) = 0;
 
             /**
-             * @brief Trigger a toggle command for this jet
+             * @brief Trigger a toggle command for this jet.
+             *        on_sent is called when the command is actually transmitted.
              */
-            virtual void toggle_jet() = 0;
+            virtual void toggle_jet(std::function<void()> on_sent) = 0;
 
             /**
              * @brief Update logic called when spa state changes
@@ -44,20 +45,28 @@ namespace esphome
              * @param current_state Reference to current component state for comparison
              * @param publish_callback Callback to publish new state
              */
-            void update_toggle_state(
+            /**
+             * @brief Sync ESPHome component state from the spa — no toggling.
+             *        Call from register_listener on every state update.
+             */
+            void sync_from_spa(
                 const SpaState *spaState,
-                int desired_state,
-                int &current_state,
-                std::function<void(int)> publish_callback);
+                uint8_t &current_state,
+                std::function<void(uint8_t)> publish_callback);
 
             /**
-             * @brief Request a state change with toggle logic
-             * @param target_state Target state (0=OFF, 1=LOW, 2=HIGH)
-             * @param current_jet_state Current jet state from spa
+             * @brief Drive the spa toward the desired state via toggle commands.
+             *        Call from register_retry_listener (once per second).
              */
-            void request_state_change(int target_state, double current_jet_state);
+            void retry_toggle();
 
-            BalboaSpa *spa = nullptr;
+            /**
+             * @brief Queue a state change — does NOT send an immediate toggle.
+             * @param target_state Target state (0=OFF, 1=LOW, 2=HIGH)
+             */
+            void request_state_change(uint8_t target_state);
+
+            BalboaSpa *spa_ = nullptr;
             const char *tag;
             const char *jet_name;
 
@@ -65,8 +74,8 @@ namespace esphome
             ToggleStateMaybe desired_state = ToggleStateMaybe::DONT_KNOW;
             uint8_t toggle_attempts = 0;
             uint8_t max_toggle_attempts = 5;
-            uint8_t discard_updates = 0;
-            uint8_t discard_updates_config = 20;
+            bool toggle_inflight_ = false;
+            uint32_t request_time_ = 0;
         };
 
     } // namespace balboa_spa

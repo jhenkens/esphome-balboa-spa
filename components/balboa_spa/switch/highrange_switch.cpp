@@ -4,24 +4,24 @@ namespace esphome
 {
     namespace balboa_spa
     {
-        void HighrangeSwitch::update(SpaState *spaState)
+        void HighrangeSwitch::update()
         {
-            if (this->state != spaState->highrange)
+            bool high = spa_->get_current_state()->highrange;
+            if (this->state != high)
             {
-                this->publish_state(spaState->highrange);
+                this->publish_state(high);
             }
         }
 
         void HighrangeSwitch::set_parent(BalboaSpa *parent)
         {
-            spa = parent;
-            parent->register_listener([this](SpaState *spaState)
-                                      { this->update(spaState); });
+            spa_ = parent;
+            parent->register_listener([this]() { this->update(); });
         }
 
         void HighrangeSwitch::write_state(bool state)
         {
-            spa->set_highrange(state);
+            spa_->set_highrange(state);
         }
 
     } // namespace balboa_spa

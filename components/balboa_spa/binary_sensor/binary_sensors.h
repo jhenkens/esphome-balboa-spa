@@ -22,22 +22,22 @@ namespace esphome
         RESTMODE,
         HEATSTATE,
         CONNECTED,
-        FILTER1_RUNNING,
-        FILTER2_RUNNING,
-        CLEANUP_CYCLE
+        FILTER1_WINDOW_ACTIVE,
+        FILTER2_WINDOW_ACTIVE,
+        CLEANUP_CYCLE,
+        TIME_SYNCED
       };
 
     public:
       BalboaSpaBinarySensors();
-      void update(SpaState *spaState);
+      void update();
 
       void set_parent(BalboaSpa *parent);
       void set_sensor_type(const BalboaSpaBinarySensorType _type) { sensor_type = _type; }
 
     private:
       BalboaSpaBinarySensorType sensor_type;
-      BalboaSpa *spa;
-      uint32_t last_update_time;
+      BalboaSpa *spa_;
     };
 
   } // namespace balboa_spa

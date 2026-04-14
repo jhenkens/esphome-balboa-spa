@@ -9,138 +9,82 @@ namespace esphome
 
         static const char *TAG = "balboa_spa.water_heater";
 
-        // Modes:
-        //   OFF         → rest_mode=1 (sleep/rest, energy-saving standby)
-        //   ECO         → rest_mode=0, highrange=0 (ready, standard temp range)
-        //   PERFORMANCE → rest_mode=0, highrange=1 (ready, high temp range)
+        void BalboaSpaWaterHeater::set_parent(BalboaSpa *parent)
+        {
+            bool fahrenheit = false;
+#ifdef USE_WATER_HEATER_TEMPERATURE_UNIT
+            fahrenheit = this->temperature_unit_override_ == water_heater::WaterHeaterTemperatureUnit::WATER_HEATER_TEMPERATURE_UNIT_FAHRENHEIT;
+#endif
+            spa_temp_init(parent, fahrenheit);
+        }
 
         water_heater::WaterHeaterTraits BalboaSpaWaterHeater::traits()
         {
-            auto traits = water_heater::WaterHeaterTraits();
-            traits.set_supported_modes({
-                water_heater::WATER_HEATER_MODE_OFF,
-                water_heater::WATER_HEATER_MODE_ECO,
-                water_heater::WATER_HEATER_MODE_PERFORMANCE,
-            });
-            traits.set_supports_current_temperature(true);
-            return traits;
+            update_traits();
+            return traits_;
         }
 
-        void BalboaSpaWaterHeater::setup()
+        void BalboaSpaWaterHeater::update_traits()
         {
-            if (this->setup_complete_)
-                return;
-            this->setup_complete_ = true;
+            traits_.set_supported_modes({
+                water_heater::WATER_HEATER_MODE_OFF,
+                water_heater::WATER_HEATER_MODE_ECO,
+                water_heater::WATER_HEATER_MODE_ELECTRIC    ,
+            });
+            traits_.set_supports_current_temperature(true);
+            traits_.set_min_temperature(range_min());
+            traits_.set_max_temperature(range_max());
+            traits_.set_target_temperature_step(temp_step());
+        }
 
-            // Ensure an initial state is published so HA can mark the entity as available.
-            this->mode_ = water_heater::WATER_HEATER_MODE_OFF;
-            this->publish_state();
+        void BalboaSpaWaterHeater::update()
+        {
+            const SpaState *s = spa_->get_current_state();
+            bool needs_update = false;
+            if (!spa_sync_temps(s, this->target_temperature_, this->current_temperature_, needs_update))
+                return;
+
+            if (s->rest_mode != HeatingMode::NOT_YET_RECEIVED)
+            {
+                water_heater::WaterHeaterMode new_mode;
+                if (spa_->get_restmode())
+                    new_mode = water_heater::WATER_HEATER_MODE_OFF;
+                else if (spa_->get_highrange())
+                    new_mode = water_heater::WATER_HEATER_MODE_ELECTRIC;
+                else
+                    new_mode = water_heater::WATER_HEATER_MODE_ECO;
+
+                needs_update |= (new_mode != this->mode_);
+                this->mode_ = new_mode;
+            }
+
+            uint32_t new_state = spa_->get_heating() ? water_heater::WATER_HEATER_STATE_ON : 0;
+            needs_update |= (new_state != this->state_);
+            this->state_ = new_state;
+
+            if (needs_update)
+                this->publish_state();
         }
 
         void BalboaSpaWaterHeater::control(const water_heater::WaterHeaterCall &call)
         {
             float target_temp = call.get_target_temperature();
             if (!std::isnan(target_temp))
-            {
-                spa->set_temp(target_temp);
-            }
+                spa_->set_temp(to_internal(target_temp));
 
             if (call.get_mode().has_value())
             {
                 auto requested_mode = *call.get_mode();
-                bool is_in_rest = spa->get_restmode();
-
                 if (requested_mode == water_heater::WATER_HEATER_MODE_OFF)
                 {
-                    if (!is_in_rest)
-                    {
-                        ESP_LOGD(TAG, "Switching to OFF (rest) mode");
-                        spa->toggle_heat();
-                    }
-                }
-                else if (requested_mode == water_heater::WATER_HEATER_MODE_ECO)
-                {
-                    spa->set_highrange(false);
-                    if (is_in_rest)
-                    {
-                        ESP_LOGD(TAG, "Switching to ECO (ready, standard range) mode");
-                        spa->toggle_heat();
-                    }
-                }
-                else if (requested_mode == water_heater::WATER_HEATER_MODE_PERFORMANCE)
-                {
-                    spa->set_highrange(true);
-                    if (is_in_rest)
-                    {
-                        ESP_LOGD(TAG, "Switching to PERFORMANCE (ready, high range) mode");
-                        spa->toggle_heat();
-                    }
-                }
-            }
-        }
-
-        void BalboaSpaWaterHeater::set_parent(BalboaSpa *parent)
-        {
-            spa = parent;
-            this->setup();
-            parent->register_listener([this](SpaState *spaState)
-                                      { this->update(spaState); });
-        }
-
-        void BalboaSpaWaterHeater::update(SpaState *spaState)
-        {
-            bool needs_update = false;
-
-            if (!spa->is_communicating())
-            {
-                this->target_temperature_ = NAN;
-                this->current_temperature_ = NAN;
-                return;
-            }
-
-            float target_temp = spaState->target_temp;
-            if (!std::isnan(target_temp) && target_temp != this->target_temperature_)
-            {
-                this->target_temperature_ = target_temp;
-                needs_update = true;
-            }
-
-            float current_temp = spaState->current_temp;
-            if (!std::isnan(current_temp) && current_temp != this->current_temperature_)
-            {
-                this->current_temperature_ = current_temp;
-                needs_update = true;
-            }
-
-            // Map spa state to water heater mode.
-            // rest_mode=254 is undefined (spa not yet initialised); skip update.
-            if (spaState->rest_mode != 254)
-            {
-                water_heater::WaterHeaterMode new_mode;
-                if (spaState->rest_mode == 1)
-                {
-                    new_mode = water_heater::WATER_HEATER_MODE_OFF;
-                }
-                else if (spaState->highrange == 1)
-                {
-                    new_mode = water_heater::WATER_HEATER_MODE_PERFORMANCE;
+                    spa_->set_rest_mode(true);
                 }
                 else
                 {
-                    new_mode = water_heater::WATER_HEATER_MODE_ECO;
+                    bool want_high = (requested_mode == water_heater::WATER_HEATER_MODE_ELECTRIC);
+                    spa_->set_highrange(want_high);
+                    spa_->set_rest_mode(false);
                 }
-
-                if (new_mode != this->mode_)
-                {
-                    this->mode_ = new_mode;
-                    needs_update = true;
-                }
-            }
-
-            if (needs_update || this->last_update_time + 300000 < millis())
-            {
-                this->publish_state();
-                this->last_update_time = millis();
             }
         }
 

@@ -68,18 +68,15 @@ namespace esphome
         // SpaTimeText implementation
         void SpaTimeText::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
+            this->spa_ = parent;
             // Register listener to update from spa state
-            parent->register_listener([this](SpaState *state) {
-                this->update_from_spa_state(state);
-            });
+            parent->register_listener([this]() { this->update(); });
         }
 
-        void SpaTimeText::update_from_spa_state(SpaState *state)
+        void SpaTimeText::update()
         {
-            if (state != nullptr)
-            {
-                char time_str[6];
+            const SpaState *state = spa_->get_current_state();
+            char time_str[6];
                 snprintf(time_str, sizeof(time_str), "%02d:%02d", state->hour, state->minutes);
                 std::string current_time(time_str);
                 
@@ -91,9 +88,7 @@ namespace esphome
                     this->state = current_time;
                     this->publish_state(current_time);
                     this->updating_from_spa_ = false;
-                    ESP_LOGD(TAG, "Spa time updated from tub: %s", current_time.c_str());
                 }
-            }
         }
 
         void SpaTimeText::control(const std::string &value)
@@ -108,11 +103,7 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
-                this->parent_->set_hour(hour);
-                this->parent_->set_minute(minute);
-                this->state = value;
-                this->publish_state(value);
-                ESP_LOGI(TAG, "Spa time set to: %s", value.c_str());
+                this->spa_->set_time(hour, minute);
             }
             else
             {
@@ -128,7 +119,7 @@ namespace esphome
         // SpaFilter1StartTimeText implementation
         void SpaFilter1StartTimeText::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
+            this->spa_ = parent;
             // Register filter listener to update from spa filter settings
             parent->register_filter_listener([this](SpaFilterSettings *settings) {
                 this->update_from_filter_settings(settings);
@@ -158,12 +149,10 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
-                this->parent_->set_filter1_start_time(hour, minute);
-                this->state = value;
-                this->publish_state(value);
+                this->spa_->set_filter1_start_time(hour, minute);
                 ESP_LOGI(TAG, "Filter 1 start time set to: %s", value.c_str());
                 // Request fresh filter settings from spa after update
-                this->parent_->request_filter_settings_update();
+                this->spa_->request_filter_settings_update();
             }
             else
             {
@@ -179,7 +168,7 @@ namespace esphome
         // SpaFilter1DurationText implementation
         void SpaFilter1DurationText::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
+            this->spa_ = parent;
             // Register filter listener to update from spa filter settings
             parent->register_filter_listener([this](SpaFilterSettings *settings) {
                 this->update_from_filter_settings(settings);
@@ -209,12 +198,12 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
-                this->parent_->set_filter1_duration(hour, minute);
+                this->spa_->set_filter1_duration(hour, minute);
                 this->state = value;
                 this->publish_state(value);
                 ESP_LOGI(TAG, "Filter 1 duration set to: %s", value.c_str());
                 // Request fresh filter settings from spa after update
-                this->parent_->request_filter_settings_update();
+                this->spa_->request_filter_settings_update();
             }
             else
             {
@@ -230,7 +219,7 @@ namespace esphome
         // SpaFilter2StartTimeText implementation
         void SpaFilter2StartTimeText::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
+            this->spa_ = parent;
             // Register filter listener to update from spa filter settings
             parent->register_filter_listener([this](SpaFilterSettings *settings) {
                 this->update_from_filter_settings(settings);
@@ -271,12 +260,10 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
-                this->parent_->set_filter2_start_time(hour, minute);
-                this->state = value;
-                this->publish_state(value);
+                this->spa_->set_filter2_start_time(hour, minute);
                 ESP_LOGI(TAG, "Filter 2 start time set to: %s", value.c_str());
                 // Request fresh filter settings from spa after update
-                this->parent_->request_filter_settings_update();
+                this->spa_->request_filter_settings_update();
             }
             else
             {
@@ -292,7 +279,7 @@ namespace esphome
         // SpaFilter2DurationText implementation
         void SpaFilter2DurationText::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
+            this->spa_ = parent;
             // Register filter listener to update from spa filter settings
             parent->register_filter_listener([this](SpaFilterSettings *settings) {
                 this->update_from_filter_settings(settings);
@@ -333,12 +320,10 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
-                this->parent_->set_filter2_duration(hour, minute);
-                this->state = value;
-                this->publish_state(value);
+                this->spa_->set_filter2_duration(hour, minute);
                 ESP_LOGI(TAG, "Filter 2 duration set to: %s", value.c_str());
                 // Request fresh filter settings from spa after update
-                this->parent_->request_filter_settings_update();
+                this->spa_->request_filter_settings_update();
             }
             else
             {

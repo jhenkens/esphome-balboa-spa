@@ -11,11 +11,11 @@ namespace esphome
     {
     public:
       void set_parent(BalboaSpa *parent);
-      void update(SpaState *spaState);
+      void update();
 
     private:
-      // Store last known value for change detection
-      uint8_t last_reminder_ = 0xFF;
+      BalboaSpa *spa_ = nullptr;
+      ReminderType last_reminder_ = ReminderType::UNKNOWN;
     };
 
   } // namespace balboa_spa

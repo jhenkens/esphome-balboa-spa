@@ -7,70 +7,67 @@ namespace esphome
     {
 
         static const char *TAG = "BalboaSpa.binary_sensors";
-        
+
         // Constant for time calculations
         static constexpr int MINUTES_PER_DAY = 24 * 60; // 1440 minutes in a day
 
-        /**
-         * Helper function to check if a filter cycle is currently running
-         * @param current_hour Current spa hour (0-23)
-         * @param current_minute Current spa minute (0-59)
-         * @param start_hour Filter start hour (0-23)
-         * @param start_minute Filter start minute (0-59)
-         * @param duration_hour Filter duration hours (0-23)
-         * @param duration_minute Filter duration minutes (0-59)
-         * @return true if filter should be running, false otherwise
-         */
-        static bool is_filter_running(uint8_t current_hour, uint8_t current_minute,
-                                       uint8_t start_hour, uint8_t start_minute,
-                                       uint8_t duration_hour, uint8_t duration_minute)
+        static bool is_filter_window_active(uint8_t current_hour, uint8_t current_minute,
+                                            uint8_t start_hour, uint8_t start_minute,
+                                            uint8_t duration_hour, uint8_t duration_minute)
         {
-            // Convert times to total minutes since midnight for easier comparison
             const int current_minutes = current_hour * 60 + current_minute;
             const int start_minutes = start_hour * 60 + start_minute;
-            const int duration_total_minutes = duration_hour * 60 + duration_minute;
-            const int end_minutes = start_minutes + duration_total_minutes;
-
-            // Handle wrap-around midnight case
+            const int end_minutes = start_minutes + duration_hour * 60 + duration_minute;
             if (end_minutes >= MINUTES_PER_DAY)
-            {
-                // Filter cycle wraps past midnight
-                // Running if: current >= start OR current < (end - MINUTES_PER_DAY)
                 return (current_minutes >= start_minutes) || (current_minutes < (end_minutes - MINUTES_PER_DAY));
+            return (current_minutes >= start_minutes) && (current_minutes < end_minutes);
+        }
+
+        static bool time_is_invalid(uint8_t hour, uint8_t minute)
+        {
+            // Use the current system time (epoch time converted to local time)
+            time_t now_timestamp = time(nullptr);
+            struct tm *time_info = localtime(&now_timestamp);
+
+            if (time_info == nullptr || now_timestamp < 1000000000) // Basic validity check
+            {
+                ESP_LOGD(TAG, "System time not valid yet");
+                return true; // Not synced if system time is not valid
             }
             else
             {
-                // Normal case: filter cycle within same day
-                // Running if: start <= current < end
-                return (current_minutes >= start_minutes) && (current_minutes < end_minutes);
+                // Consider time synced if spa time matches system time within a 5-minute window
+                const int spa_minutes = hour * 60 + minute;
+                const int system_minutes = time_info->tm_hour * 60 + time_info->tm_min;
+                const int diff = abs(spa_minutes - system_minutes);
+                return !((diff <= 5) || (diff >= (MINUTES_PER_DAY - 5))); // Account for wrap-around
             }
         }
 
         void BalboaSpaBinarySensors::set_parent(BalboaSpa *parent)
         {
-            this->spa = parent;
-            parent->register_listener([this](SpaState *spaState)
-                                      { this->update(spaState); });
+            this->spa_ = parent;
+            parent->register_listener([this]() { this->update(); });
         }
 
-        void BalboaSpaBinarySensors::update(SpaState *spaState)
+        void BalboaSpaBinarySensors::update()
         {
+            const SpaState *spaState = spa_->get_current_state();
             bool sensor_state_value;
-            if (spa == nullptr || spaState == nullptr || (!spa->is_communicating() && sensor_type != BalboaSpaBinarySensorType::CONNECTED))
+            if (spa_ == nullptr || spaState == nullptr || (!spa_->is_communicating() && sensor_type != BalboaSpaBinarySensorType::CONNECTED))
             {
                 this->publish_state(NAN);
                 return;
             }
 
-            // Get filter settings once if needed for filter-related sensors
+            // Fetch filter settings if needed
             SpaFilterSettings *filterSettings = nullptr;
-            if (sensor_type == BalboaSpaBinarySensorType::FILTER1_RUNNING ||
-                sensor_type == BalboaSpaBinarySensorType::FILTER2_RUNNING)
+            if (sensor_type == BalboaSpaBinarySensorType::FILTER1_WINDOW_ACTIVE ||
+                sensor_type == BalboaSpaBinarySensorType::FILTER2_WINDOW_ACTIVE)
             {
-                filterSettings = spa->get_current_filter_settings();
+                filterSettings = spa_->get_current_filter_settings();
                 if (filterSettings == nullptr)
                 {
-                    // Filter settings not available yet
                     this->publish_state(NAN);
                     return;
                 }
@@ -89,52 +86,41 @@ namespace esphome
                 sensor_state_value = spaState->circulation;
                 break;
             case BalboaSpaBinarySensorType::RESTMODE:
-                state_value = spaState->rest_mode;
-                sensor_state_value = state_value;
-                if (state_value == 254)
-                {
-                    // This indicate no value
+                if (spaState->rest_mode == HeatingMode::NOT_YET_RECEIVED)
                     return;
-                }
+                sensor_state_value = (spaState->rest_mode == HeatingMode::REST ||
+                                      spaState->rest_mode == HeatingMode::READY_IN_REST);
                 break;
             case BalboaSpaBinarySensorType::HEATSTATE:
                 state_value = spaState->heat_state;
-                sensor_state_value = state_value;
-                if (state_value == 254)
+                if (state_value != 254)
                 {
-                    // no value
-                    return;
+                    sensor_state_value = state_value;
                 }
                 break;
             case BalboaSpaBinarySensorType::CONNECTED:
-                sensor_state_value = spa->is_communicating();
+                sensor_state_value = spa_->is_communicating();
                 break;
-            case BalboaSpaBinarySensorType::FILTER1_RUNNING:
-            {
-                sensor_state_value = is_filter_running(
+            case BalboaSpaBinarySensorType::FILTER1_WINDOW_ACTIVE:
+                sensor_state_value = is_filter_window_active(
                     spaState->hour, spaState->minutes,
                     filterSettings->filter1_hour, filterSettings->filter1_minute,
                     filterSettings->filter1_duration_hour, filterSettings->filter1_duration_minute);
                 break;
-            }
-            case BalboaSpaBinarySensorType::FILTER2_RUNNING:
-            {
-                // Filter 2 can only be running if it's enabled
+            case BalboaSpaBinarySensorType::FILTER2_WINDOW_ACTIVE:
                 if (filterSettings->filter2_enable)
-                {
-                    sensor_state_value = is_filter_running(
+                    sensor_state_value = is_filter_window_active(
                         spaState->hour, spaState->minutes,
                         filterSettings->filter2_hour, filterSettings->filter2_minute,
                         filterSettings->filter2_duration_hour, filterSettings->filter2_duration_minute);
-                }
                 else
-                {
                     sensor_state_value = false;
-                }
                 break;
-            }
             case BalboaSpaBinarySensorType::CLEANUP_CYCLE:
                 sensor_state_value = spaState->cleanup_cycle;
+                break;
+            case BalboaSpaBinarySensorType::TIME_SYNCED:
+                sensor_state_value = time_is_invalid(spaState->hour, spaState->minutes);
                 break;
             default:
                 ESP_LOGD(TAG, "Spa/BSensors/UnknownSensorType: SensorType Number: %d", sensor_type);
@@ -142,18 +128,16 @@ namespace esphome
                 return;
             }
 
-            if (this->state != sensor_state_value || this->last_update_time + 300000 < millis())
+            if (this->state != sensor_state_value)
             {
                 this->publish_state(sensor_state_value);
-                last_update_time = millis();
             }
         }
 
         BalboaSpaBinarySensors::BalboaSpaBinarySensors()
         {
-            spa = nullptr;
+            spa_ = nullptr;
             sensor_type = BalboaSpaBinarySensorType::UNKNOWN;
-            last_update_time = 0;
         }
 
     }

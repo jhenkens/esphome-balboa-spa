@@ -7,11 +7,8 @@ namespace esphome
 
         void SpaFilter1ConfigTextSensor::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
-            parent->register_listener([this](SpaState *spaState)
-                                      { 
-        auto filterSettings = this->parent_->get_current_filter_settings();
-        this->update(filterSettings); });
+            parent->register_filter_listener([this](SpaFilterSettings *filterSettings)
+                                             { this->update(filterSettings); });
         }
 
         void SpaFilter1ConfigTextSensor::update(SpaFilterSettings *filterSettings)
@@ -42,13 +39,8 @@ namespace esphome
 
         void SpaFilter2ConfigTextSensor::set_parent(BalboaSpa *parent)
         {
-            this->parent_ = parent;
-            parent->register_listener(
-                [this](SpaState *spaState)
-                {
-                    auto filterSettings = this->parent_->get_current_filter_settings();
-                    this->update(filterSettings);
-                });
+            parent->register_filter_listener([this](SpaFilterSettings *filterSettings)
+                                             { this->update(filterSettings); });
         }
 
         void SpaFilter2ConfigTextSensor::update(SpaFilterSettings *filterSettings)

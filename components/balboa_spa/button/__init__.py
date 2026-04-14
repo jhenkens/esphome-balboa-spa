@@ -9,7 +9,6 @@ SyncTimeButton = balboa_spa_ns.class_("SyncTimeButton", button.Button)
 DisableFilter2Button = balboa_spa_ns.class_("DisableFilter2Button", button.Button)
 RequestFaultLogButton = balboa_spa_ns.class_("RequestFaultLogButton", button.Button)
 ClearReminderButton = balboa_spa_ns.class_("ClearReminderButton", button.Button)
-
 CONF_SYNC_TIME = "sync_time"
 CONF_DISABLE_FILTER2 = "disable_filter2"
 CONF_REQUEST_FAULT_LOG = "request_fault_log"

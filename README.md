@@ -44,8 +44,6 @@ uart:
 
 balboa_spa:
   id: spa
-  # Set this to C or F based on the units your spa is configured for
-  spa_temp_scale: F
   # Optional: Override the automatically assigned client ID
   # client_id: 10
 
@@ -63,7 +61,6 @@ switch:
     jet1:
       name: Jet1
       max_toggle_attempts: 5  # Optional: max attempts to reach desired state (default: 5)
-      discard_updates: 5      # Optional: state updates to ignore after each toggle (default: 20)
     jet2:
       name: Jet2
     jet3:
@@ -83,7 +80,6 @@ fan:
       name: "Jet 1"
       id: jet1_fan
       max_toggle_attempts: 5  # Optional: max attempts to reach desired state (default: 5)
-      discard_updates: 20     # Optional: state updates to ignore after each toggle (default: 20)
     jet_2:
       name: "Jet 2"
       id: jet2_fan
@@ -371,7 +367,6 @@ fan:
     jet_1:
       name: "Jet 1"
       max_toggle_attempts: 5  # Optional, default: 5
-      discard_updates: 20     # Optional, default: 20
 ```
 
 ### Switch Components (Simple ON/OFF Control)
@@ -393,7 +388,6 @@ switch:
     jet1:
       name: Jet1
       max_toggle_attempts: 5  # Optional, default: 5
-      discard_updates: 20      # Optional, default: 20
 ```
 
 ### MAX_TOGGLE_ATTEMPTS Behavior
@@ -401,7 +395,6 @@ switch:
 Both switch and fan components support two configurable parameters:
 
 **`max_toggle_attempts`** (default: 5) - Maximum retry attempts when spa blocks state changes
-**`discard_updates`** (default: 20) - Number of state updates to ignore after each toggle command
 
 These work together to handle cases where the spa temporarily blocks state changes:
 

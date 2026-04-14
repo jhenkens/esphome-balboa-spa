@@ -10,6 +10,7 @@ from .. import (
 
 from esphome.const import (
     DEVICE_CLASS_CONNECTIVITY,
+    DEVICE_CLASS_PROBLEM,
     ENTITY_CATEGORY_DIAGNOSTIC,
     DEVICE_CLASS_POWER,
     DEVICE_CLASS_RUNNING
@@ -26,9 +27,10 @@ CONF_CIRCULATION = "circulation"
 CONF_RESTMODE = "restmode"
 CONF_HEATSTATE = "heatstate"
 CONF_CONNECTED = "connected"
-CONF_FILTER1_RUNNING = "filter1_running"
-CONF_FILTER2_RUNNING = "filter2_running"
+CONF_FILTER1_WINDOW_ACTIVE = "filter1_window_active"
+CONF_FILTER2_WINDOW_ACTIVE = "filter2_window_active"
 CONF_CLEANUP_CYCLE = "cleanup_cycle"
+CONF_TIME_SYNCED = "time_synced"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -44,7 +46,8 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_CIRCULATION): binary_sensor.binary_sensor_schema(
             SpaSensor,
-            device_class=DEVICE_CLASS_POWER,
+            icon="mdi:pump",
+            device_class=DEVICE_CLASS_RUNNING,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
         cv.Optional(CONF_RESTMODE): binary_sensor.binary_sensor_schema(
@@ -62,13 +65,13 @@ CONFIG_SCHEMA = cv.Schema(
             device_class=DEVICE_CLASS_CONNECTIVITY,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
-        cv.Optional(CONF_FILTER1_RUNNING): binary_sensor.binary_sensor_schema(
+        cv.Optional(CONF_FILTER1_WINDOW_ACTIVE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:air-filter",
             device_class=DEVICE_CLASS_RUNNING,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
-        cv.Optional(CONF_FILTER2_RUNNING): binary_sensor.binary_sensor_schema(
+        cv.Optional(CONF_FILTER2_WINDOW_ACTIVE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:air-filter",
             device_class=DEVICE_CLASS_RUNNING,
@@ -80,6 +83,12 @@ CONFIG_SCHEMA = cv.Schema(
             device_class=DEVICE_CLASS_RUNNING,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
+        cv.Optional(CONF_TIME_SYNCED): binary_sensor.binary_sensor_schema(
+            SpaSensor,
+            icon="mdi:clock-check",
+            device_class=DEVICE_CLASS_PROBLEM,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+        ),
     })
 
 async def to_code(config):
@@ -87,8 +96,8 @@ async def to_code(config):
 
     sensor_types = [
         CONF_BLOWER, CONF_HIGHRANGE, CONF_CIRCULATION, CONF_RESTMODE,
-        CONF_HEATSTATE, CONF_CONNECTED, CONF_FILTER1_RUNNING,
-        CONF_FILTER2_RUNNING, CONF_CLEANUP_CYCLE,
+        CONF_HEATSTATE, CONF_CONNECTED, CONF_FILTER1_WINDOW_ACTIVE,
+        CONF_FILTER2_WINDOW_ACTIVE, CONF_CLEANUP_CYCLE, CONF_TIME_SYNCED
     ]
     for sensor_type in sensor_types:
         if conf := config.get(sensor_type):

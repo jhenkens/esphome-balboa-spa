@@ -15,7 +15,7 @@ namespace esphome
 
     private:
       // Store last known value for change detection
-      std::string last_message_ = "";
+      const char *last_message_ = nullptr;
     };
 
   } // namespace balboa_spa

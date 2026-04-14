@@ -11,10 +11,10 @@ namespace esphome
     {
     public:
       void set_parent(BalboaSpa *parent);
-      void update(SpaState *spaState);
+      void update();
 
     private:
-      // Store last known values for change detection
+      BalboaSpa *spa_ = nullptr;
       uint8_t last_hour_ = 255;
       uint8_t last_minutes_ = 255;
     };

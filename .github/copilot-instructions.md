@@ -68,7 +68,6 @@ uart:
 
 balboa_spa:
   id: spa
-  spa_temp_scale: F  # or C based on spa configuration
 ```
 
 ### Platform Implementation
@@ -129,10 +128,6 @@ balboa_spa:
 - Hardware wiring guides from community projects
 
 ## Configuration Best Practices
-
-### Temperature Scale
-- Set `spa_temp_scale` to match your spa's native configuration (C or F)
-- This affects both display and control ranges
 
 ### Component Selection
 - Only include platforms you actually need

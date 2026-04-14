@@ -8,8 +8,6 @@ external_components:
 
 balboa_spa:
   id: test_spa
-  spa_temp_scale: F
-  esphome_temp_scale: C
 
 # Example 1: Using switches for simple ON/OFF control (backwards compatible)
 switch:
@@ -20,7 +18,6 @@ switch:
       max_toggle_attempts: 5  # Optional: default is 5
     jet2:
       name: Jet2
-      discard_updates: 20 # Optional: default is 20
     jet3:
       name: Jet3
     jet4:
@@ -54,37 +51,42 @@ fan:
     jet_2:
       name: "Jet 2 Fan"
       id: jet2_fan
-      discard_updates: 10
     jet_3:
       name: "Jet 3 Fan"
       id: jet3_fan
     jet_4:
       name: "Jet 4 Fan"
       id: jet4_fan
-      discard_updates: 5
       max_toggle_attempts: 2
 
 climate:
   - platform: balboa_spa
     balboa_spa_id: test_spa
     name: "Spa Thermostat"
-    visual:
-      min_temperature: 62 °F    # min: 17
-      max_temperature: 105 °F    # max: 30
-      temperature_step: 0.5 °F  # min: 0.5
+    unit_of_measurement: "°F"
 
 water_heater:
   - platform: balboa_spa
     balboa_spa_id: test_spa
     name: "Spa Water Heater"
-    visual:
-      min_temperature: 62 °F    # min: 17
-      max_temperature: 105 °F   # max: 40
-      target_temperature_step: 0.5
+    unit_of_measurement: "°F"
+
+number:
+  - platform: balboa_spa
+    balboa_spa_id: test_spa
+    target_temp:
+      name: "Target Temperature"
+      unit_of_measurement: "°F"
 
 sensor:
   - platform: balboa_spa
     balboa_spa_id: test_spa
+    current_temp:
+      name: "Current Temperature"
+      unit_of_measurement: "°F"
+    target_temp:
+      name: "Target Temperature (Sensor)"
+      unit_of_measurement: "°F"
     blower:
       name: Blower
     highrange:
@@ -95,6 +97,10 @@ sensor:
       name: Rest Mode
     heatstate:
       name: Heat State
+    spa_temp_scale:
+      name: Spa Temp Scale
+    time_since_last_status:
+      name: Time Since Last Status
     fault_code:
       name: Fault Code
     fault_total_entries:
@@ -119,10 +125,10 @@ binary_sensor:
       name: Heat State
     connected:
       name: Connected
-    filter1_running:
-      name: Filter 1 Running
-    filter2_running:
-      name: Filter 2 Running
+    filter1_window_active:
+      name: Filter 1 Window Active
+    filter2_window_active:
+      name: Filter 2 Window Active
     cleanup_cycle:
       name: Cleanup Cycle
 
