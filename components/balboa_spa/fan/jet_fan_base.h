@@ -22,14 +22,13 @@ namespace esphome
 
             void update();  // sync ESPHome ← spa
             void set_parent(BalboaSpa *parent);
-            void set_max_toggle_attempts(uint8_t value) { JetToggleComponentBase::set_max_toggle_attempts(value); }
 
             fan::FanTraits get_traits() override;
 
         protected:
             void control(const fan::FanCall &call) override;
             virtual uint8_t get_jet_state(const SpaState *spaState) = 0;
-            virtual void toggle_jet(std::function<void()> on_sent) = 0;
+            virtual void toggle_jet(uint8_t expected_state, uint8_t max_retries) = 0;
 
         private:
             uint8_t current_fan_state = 0; // 0=OFF, 1=LOW, 2=HIGH

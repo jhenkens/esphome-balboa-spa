@@ -51,7 +51,6 @@ namespace esphome
         {
             JetToggleComponentBase::set_parent(parent);
             parent->register_listener([this]() { this->update(); });
-            parent->register_retry_listener([this]() { this->retry_toggle(); });
         }
 
         void JetFanBase::control(const fan::FanCall &call)

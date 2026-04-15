@@ -22,9 +22,9 @@ namespace esphome
             return spaState->jets[index_ - 1];
         }
 
-        void JetSwitch::toggle_jet(std::function<void()> on_sent)
+        void JetSwitch::toggle_jet(uint8_t expected_state, uint8_t max_retries)
         {
-            spa_->toggle_jet(index_, std::move(on_sent));
+            spa_->toggle_jet(index_, expected_state, max_retries);
         }
 
     } // namespace balboa_spa

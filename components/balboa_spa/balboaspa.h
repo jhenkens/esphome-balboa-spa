@@ -25,6 +25,25 @@ namespace esphome
         static constexpr const char *STRON = "ON";
         static constexpr const char *STROFF = "OFF";
 
+        // Identifies which spa state field a queued command is expected to change.
+        // Used as the dedup key and for pruning satisfied commands after state updates.
+        enum class ExpectedField : uint8_t
+        {
+            NONE        = 0,  // fire-and-forget, never retried
+            JET_0       = 1,
+            JET_1       = 2,
+            JET_2       = 3,
+            JET_3       = 4,
+            BLOWER      = 5,
+            LIGHT_0     = 6,
+            LIGHT_1     = 7,
+            HIGHRANGE   = 8,
+            REST_MODE   = 9,
+            TARGET_TEMP = 10,
+            CLOCK_24H   = 11,
+            FILTER      = 12,
+        };
+
         class BalboaSpa : public uart::UARTDevice, public PollingComponent
         {
         public:
@@ -49,8 +68,8 @@ namespace esphome
             void set_filter2_duration(uint8_t hour, uint8_t minute);
             void disable_filter2();
             void toggle_light(uint8_t index); // index 1-2
-            void toggle_jet(uint8_t index, std::function<void()> on_sent = nullptr);   // index 1-4
-            void toggle_blower(std::function<void()> on_sent = nullptr);
+            void toggle_jet(uint8_t index, uint8_t expected_state, uint8_t max_retries = 5);  // index 1-4
+            void toggle_blower(uint8_t expected_state, uint8_t max_retries = 5);
             void set_highrange(bool high);
             void clear_reminder();
 
@@ -66,7 +85,6 @@ namespace esphome
             bool is_communicating();
 
             void register_listener(const std::function<void()> &func) { this->listeners_.push_back(func); }
-            void register_retry_listener(const std::function<void()> &func) { this->retry_listeners_.push_back(func); }
             void register_filter_listener(const std::function<void(SpaFilterSettings *)> &func) { this->filter_listeners_.push_back(func); }
             void register_fault_log_listener(const std::function<void(SpaFaultLog *)> &func) { this->fault_log_listeners_.push_back(func); }
             void register_highrange_listener(const std::function<void()> &func) { this->highrange_listeners_.push_back(func); }
@@ -79,9 +97,6 @@ namespace esphome
             void request_config_update();
             void request_filter_settings_update();
             void request_fault_log_update();
-            void request_retry_dispatch(){
-                this->should_run_update_loop_ = true;
-            }
 
         private:
             uint8_t input_buffer[BUFFER_LENGTH];
@@ -101,7 +116,7 @@ namespace esphome
             uint8_t last_settings_crc = 0x00;
             uint8_t last_filter_crc = 0x00;
             uint8_t last_fault_crc = 0x00;
-            // Command queue — replaces single send_command byte
+            // Command queue — sorted linear array, insertion-sorted by available_at
             enum class CmdType : uint8_t
             {
                 TOGGLE,
@@ -113,12 +128,16 @@ namespace esphome
             struct PendingCmd
             {
                 CmdType type;
-                uint32_t queued_at = 0;
-                std::function<void()> on_sent;
+                ExpectedField target_field = ExpectedField::NONE; // dedup key + expected-state selector
+                uint8_t expected_toggle_value = 0;   // value expected in spa state after command succeeds
+                uint8_t retry_count = 0;      // number of times sent so far
+                uint8_t max_retries = 0;      // 0 = fire-and-forget; give up when retry_count >= max_retries
+                uint32_t queued_at = 0;       // when first created
+                uint32_t available_at = 0;    // earliest millis() at which this may be sent
                 union
                 {
                     uint8_t toggle_code;
-                    uint8_t temp_raw;
+                    float target_temperature;
                     struct
                     {
                         uint8_t hour;
@@ -140,17 +159,24 @@ namespace esphome
                 };
             };
             static const uint8_t CMD_QUEUE_SIZE = 8;
+            static constexpr uint32_t RETRY_BACKOFF_MS = 5000;
+            static constexpr uint8_t PENDING_MSG_BUF_SIZE = 24;
             PendingCmd cmd_queue_[CMD_QUEUE_SIZE];
-            uint8_t cmd_head_ = 0;
-            uint8_t cmd_tail_ = 0;
             uint8_t cmd_count_ = 0;
-            bool enqueue_cmd(const PendingCmd &cmd);
-            bool dequeue_cmd(PendingCmd &out);
-            void enqueue_toggle(uint8_t code);
+            uint8_t pending_msg_buf_[PENDING_MSG_BUF_SIZE];
+            uint8_t pending_msg_len_ = 0;
+            PendingCmd pending_cmd_ = {};      // command used to build pending_msg_buf_
+            void insert_cmd(PendingCmd cmd);
+            void remove_at(uint8_t i);
+            void rebuild_pending_msg();
+            void enqueue_toggle(uint8_t code, ExpectedField field, uint8_t expected_toggle_value, uint8_t max_retries);
             void enqueue_current_filter();
+            static ExpectedField toggle_code_to_field(uint8_t code);
+            bool is_expected_satisfied(const PendingCmd &cmd) const;
+            bool filter_cmd_satisfied(const PendingCmd &cmd) const;
+            void prune_satisfied();
 
             // Staging fields for commands that are built incrementally
-            uint8_t target_temperature = 0x00;
             uint8_t target_hour = 0x00;
             uint8_t target_minute = 0x00;
             uint8_t target_filter1_start_hour = 0x00;
@@ -171,20 +197,16 @@ namespace esphome
             uint32_t last_cts_time = 0;
             uint32_t last_listener_dispatch_time = 0;
             uint32_t listener_keepalive_ms_ = 300000;
-            uint32_t last_retry_dispatch_time_ = 0;
-            static constexpr uint32_t RETRY_LISTENER_INTERVAL_MS = 1000;
             uint32_t startup_delay_ms_ = 10000;
             uint32_t setup_time_ = 0;
             bool live_range_refresh_ = false;
             bool highrange_dirty_ = false;
             bool state_dirty_ = false;
-            bool should_run_update_loop_ = false;
 
             TEMP_SCALE spa_temp_scale = TEMP_SCALE::UNKNOWN;
             CLOCK_MODE clock_mode_24hr = CLOCK_MODE::UNKNOWN;
 
             std::vector<std::function<void()>> listeners_;
-            std::vector<std::function<void()>> retry_listeners_;
             std::vector<std::function<void(SpaFilterSettings *)>> filter_listeners_;
             std::vector<std::function<void(SpaFaultLog *)>> fault_log_listeners_;
             std::vector<std::function<void()>> highrange_listeners_;

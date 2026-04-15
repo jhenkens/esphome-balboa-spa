@@ -17,13 +17,12 @@ namespace esphome
 
             void update();  // sync ESPHome ← spa
             void set_parent(BalboaSpa *parent);
-            void set_max_toggle_attempts(uint8_t value) { JetToggleComponentBase::set_max_toggle_attempts(value); }
             void set_on_level(uint8_t value) { on_level_ = value; }
 
         protected:
             void write_state(bool state) override;
             virtual uint8_t get_jet_state(const SpaState *spaState) = 0;
-            virtual void toggle_jet(std::function<void()> on_sent) = 0;
+            virtual void toggle_jet(uint8_t expected_state, uint8_t max_retries) = 0;
 
         private:
             uint8_t current_switch_state_ = 0; // 0=OFF, >0=ON for switch

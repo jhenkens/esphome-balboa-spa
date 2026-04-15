@@ -103,17 +103,6 @@ namespace esphome
                 state_dirty_ = false;
                 last_listener_dispatch_time = now_dispatch;
             }
-
-            if (should_run_update_loop_ &&
-                (now_dispatch - last_retry_dispatch_time_) >= RETRY_LISTENER_INTERVAL_MS)
-            {
-                should_run_update_loop_ = false;
-                for (const auto &listener : this->retry_listeners_)
-                {
-                    listener();
-                }
-                last_retry_dispatch_time_ = now_dispatch;
-            }
         }
 
         float BalboaSpa::get_setup_priority() const { return esphome::setup_priority::LATE; }
@@ -123,57 +112,230 @@ namespace esphome
         SpaFilterSettings *BalboaSpa::get_current_filter_settings() { return &spaFilterSettings; }
         SpaFaultLog *BalboaSpa::get_current_fault_log() { return &spaFaultLog; }
 
-        bool BalboaSpa::enqueue_cmd(const PendingCmd &cmd)
+        ExpectedField BalboaSpa::toggle_code_to_field(uint8_t code)
         {
+            switch (code)
+            {
+            case 0x04: return ExpectedField::JET_0;
+            case 0x05: return ExpectedField::JET_1;
+            case 0x06: return ExpectedField::JET_2;
+            case 0x07: return ExpectedField::JET_3;
+            case tiBlower:      return ExpectedField::BLOWER;
+            case 0x11:          return ExpectedField::LIGHT_0;
+            case 0x12:          return ExpectedField::LIGHT_1;
+            case tiTempRange:   return ExpectedField::HIGHRANGE;
+            case tiHeatingMode: return ExpectedField::REST_MODE;
+            default:            return ExpectedField::NONE;
+            }
+        }
+
+        bool BalboaSpa::is_expected_satisfied(const PendingCmd &cmd) const
+        {
+            switch (cmd.target_field)
+            {
+            case ExpectedField::JET_0:    return spaState.jets[0] == cmd.expected_toggle_value;
+            case ExpectedField::JET_1:    return spaState.jets[1] == cmd.expected_toggle_value;
+            case ExpectedField::JET_2:    return spaState.jets[2] == cmd.expected_toggle_value;
+            case ExpectedField::JET_3:    return spaState.jets[3] == cmd.expected_toggle_value;
+            case ExpectedField::BLOWER:   return spaState.blower == cmd.expected_toggle_value;
+            case ExpectedField::LIGHT_0:  return spaState.lights[0] == cmd.expected_toggle_value;
+            case ExpectedField::LIGHT_1:  return spaState.lights[1] == cmd.expected_toggle_value;
+            case ExpectedField::HIGHRANGE: return (spaState.highrange & 0x1) == cmd.expected_toggle_value;
+            case ExpectedField::REST_MODE: return (uint8_t)spaState.rest_mode == cmd.expected_toggle_value;
+            case ExpectedField::TARGET_TEMP:
+                return !std::isnan(spaState.target_temp) && spaState.target_temp == cmd.target_temperature;
+            case ExpectedField::CLOCK_24H:
+                return (uint8_t)clock_mode_24hr == cmd.pref.data;
+            case ExpectedField::NONE:
+            case ExpectedField::FILTER:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        void BalboaSpa::remove_at(uint8_t i)
+        {
+            for (uint8_t j = i; j + 1 < cmd_count_; j++)
+                cmd_queue_[j] = cmd_queue_[j + 1];
+            cmd_count_--;
+        }
+
+        bool BalboaSpa::filter_cmd_satisfied(const PendingCmd &c) const
+        {
+            return c.target_field == ExpectedField::FILTER &&
+                spaFilterSettings.filter1_hour            == c.filter.f1_start_hour   &&
+                spaFilterSettings.filter1_minute          == c.filter.f1_start_minute &&
+                spaFilterSettings.filter1_duration_hour   == c.filter.f1_dur_hour     &&
+                spaFilterSettings.filter1_duration_minute == c.filter.f1_dur_minute   &&
+                spaFilterSettings.filter2_enable          == c.filter.f2_enable       &&
+                spaFilterSettings.filter2_hour            == c.filter.f2_start_hour   &&
+                spaFilterSettings.filter2_minute          == c.filter.f2_start_minute &&
+                spaFilterSettings.filter2_duration_hour   == c.filter.f2_dur_hour     &&
+                spaFilterSettings.filter2_duration_minute == c.filter.f2_dur_minute;
+        }
+
+        void BalboaSpa::rebuild_pending_msg()
+        {
+            if (cmd_count_ == 0 || client_id == 0) {
+                pending_msg_len_ = 0;
+                return;
+            }
+
+            const PendingCmd &head = cmd_queue_[0];
+
+            if (head.type == CmdType::SET_TEMP &&
+                spa_temp_scale != TEMP_SCALE::C && spa_temp_scale != TEMP_SCALE::F) {
+                pending_msg_len_ = 0;
+                return;
+            }
+
+            // Skip rebuild if the head command hasn't changed
+            if (pending_msg_len_ > 0 &&
+                memcmp(&head, &pending_cmd_, sizeof(PendingCmd)) == 0)
+                return;
+
+            switch (head.type)
+            {
+            case CmdType::TOGGLE: {
+                ToggleItemMessage msg(static_cast<ToggleItem>(head.toggle_code));
+                msg.set_client(client_id);
+                msg.SetCRC();
+                memcpy(pending_msg_buf_, &msg, msg._length);
+                pending_msg_len_ = msg._length;
+                break;
+            }
+            case CmdType::SET_TEMP: {
+                uint8_t raw = (spa_temp_scale == TEMP_SCALE::C)
+                    ? (uint8_t)roundf(head.target_temperature * 2.0f)
+                    : (uint8_t)roundf(head.target_temperature);
+                SetSpaTempMessage msg({raw});
+                msg.set_client(client_id);
+                msg.SetCRC();
+                memcpy(pending_msg_buf_, &msg, msg._length);
+                pending_msg_len_ = msg._length;
+                break;
+            }
+            case CmdType::SET_TIME: {
+                SetSpaTime msg({head.time.hour, head.time.minute, false});
+                msg.set_client(client_id);
+                msg.SetCRC();
+                memcpy(pending_msg_buf_, &msg, msg._length);
+                pending_msg_len_ = msg._length;
+                break;
+            }
+            case CmdType::SET_PREF: {
+                SetPreferenceMessage msg(head.pref.code, head.pref.data);
+                msg.set_client(client_id);
+                msg.SetCRC();
+                memcpy(pending_msg_buf_, &msg, msg._length);
+                pending_msg_len_ = msg._length;
+                break;
+            }
+            case CmdType::SET_FILTER: {
+                SetFilterConfigMessage msg(
+                    head.filter.f1_start_hour, head.filter.f1_start_minute,
+                    head.filter.f1_dur_hour,   head.filter.f1_dur_minute,
+                    head.filter.f2_enable != 0,
+                    head.filter.f2_start_hour, head.filter.f2_start_minute,
+                    head.filter.f2_dur_hour,   head.filter.f2_dur_minute);
+                msg.set_client(client_id);
+                msg.SetCRC();
+                memcpy(pending_msg_buf_, &msg, msg._length);
+                pending_msg_len_ = msg._length;
+                break;
+            }
+            }
+
+            pending_cmd_ = head;
+        }
+
+        void BalboaSpa::prune_satisfied()
+        {
+            uint8_t i = 0;
+            while (i < cmd_count_)
+            {
+                const PendingCmd &c = cmd_queue_[i];
+                bool satisfied = false;
+                if (c.target_field == ExpectedField::FILTER)
+                    satisfied = filter_cmd_satisfied(c);
+                else if (c.target_field != ExpectedField::NONE)
+                    satisfied = is_expected_satisfied(c);
+
+                if (satisfied)
+                {
+                    ESP_LOGD(TAG, "Command field=%d satisfied, removing", (int)c.target_field);
+                    remove_at(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            rebuild_pending_msg();
+        }
+
+        void BalboaSpa::insert_cmd(PendingCmd cmd)
+        {
+            if(is_expected_satisfied(cmd)) {
+                ESP_LOGD(TAG, "Command field=%d already satisfied, not adding to queue", (int)cmd.target_field);
+                return;
+            }
             uint32_t now = millis();
-            // For idempotent set commands, overwrite any existing entry of the same type
-            if (cmd.type == CmdType::SET_TEMP || cmd.type == CmdType::SET_TIME || cmd.type == CmdType::SET_PREF || cmd.type == CmdType::SET_FILTER)
+            if (cmd.queued_at == 0)
+                cmd.queued_at = now;
+            if (cmd.available_at == 0)
+                cmd.available_at = now;
+
+            // Remove any existing entry with the same target_field (dedup)
+            if (cmd.target_field != ExpectedField::NONE)
             {
                 for (uint8_t i = 0; i < cmd_count_; i++)
                 {
-                    uint8_t slot = (cmd_head_ + i) % CMD_QUEUE_SIZE;
-                    if (cmd_queue_[slot].type == cmd.type)
+                    if (cmd_queue_[i].target_field == cmd.target_field)
                     {
-                        cmd_queue_[slot] = cmd;
-                        cmd_queue_[slot].queued_at = now;
-                        return true;
+                        remove_at(i);
+                        break;
                     }
                 }
             }
+
             if (cmd_count_ >= CMD_QUEUE_SIZE)
             {
-                ESP_LOGW(TAG, "Command queue full, dropping command type %d", (int)cmd.type);
-                return false;
+                ESP_LOGW(TAG, "Command queue full, dropping command field=%d type=%d", (int)cmd.target_field, (int)cmd.type);
+                return;
             }
-            cmd_queue_[cmd_tail_] = cmd;
-            cmd_queue_[cmd_tail_].queued_at = now;
-            cmd_tail_ = (cmd_tail_ + 1) % CMD_QUEUE_SIZE;
+
+            // Insertion-sort by available_at (ascending) so earliest-available is at head
+            uint8_t pos = cmd_count_;
+            while (pos > 0 && cmd_queue_[pos - 1].available_at > cmd.available_at)
+            {
+                cmd_queue_[pos] = cmd_queue_[pos - 1];
+                pos--;
+            }
+            cmd_queue_[pos] = cmd;
             cmd_count_++;
-            return true;
+            rebuild_pending_msg();
         }
 
-        bool BalboaSpa::dequeue_cmd(PendingCmd &out)
-        {
-            if (cmd_count_ == 0)
-                return false;
-            out = cmd_queue_[cmd_head_];
-            cmd_head_ = (cmd_head_ + 1) % CMD_QUEUE_SIZE;
-            cmd_count_--;
-            return true;
-        }
 
-        void BalboaSpa::enqueue_toggle(uint8_t code)
+        void BalboaSpa::enqueue_toggle(uint8_t code, ExpectedField field, uint8_t expected_toggle_value, uint8_t max_retries)
         {
             PendingCmd cmd;
             cmd.type = CmdType::TOGGLE;
             cmd.toggle_code = code;
-            enqueue_cmd(cmd);
+            cmd.target_field = field;
+            cmd.expected_toggle_value = expected_toggle_value;
+            cmd.max_retries = max_retries;
+            insert_cmd(cmd);
         }
 
         void BalboaSpa::enqueue_current_filter()
         {
             PendingCmd cmd;
             cmd.type = CmdType::SET_FILTER;
+            cmd.target_field = ExpectedField::FILTER;
+            cmd.max_retries = 5;
             cmd.filter.f1_start_hour   = target_filter1_start_hour;
             cmd.filter.f1_start_minute = target_filter1_start_minute;
             cmd.filter.f1_dur_hour     = target_filter1_duration_hour;
@@ -183,7 +345,7 @@ namespace esphome
             cmd.filter.f2_start_minute = target_filter2_start_minute;
             cmd.filter.f2_dur_hour     = target_filter2_duration_hour;
             cmd.filter.f2_dur_minute   = target_filter2_duration_minute;
-            enqueue_cmd(cmd);
+            insert_cmd(cmd);
         }
 
         void BalboaSpa::set_temp(float temp)
@@ -194,7 +356,7 @@ namespace esphome
                 return;
             }
 
-            // temp is in the spa's native unit — validate range then encode to raw byte
+            // temp is in the spa's native unit — validate range
             bool valid = (spa_temp_scale == TEMP_SCALE::C)
                 ? (temp >= LOWRANGE_MIN_TEMP_C && temp <= HIGHRANGE_MAX_TEMP_C)
                 : (temp >= LOWRANGE_MIN_TEMP_F && temp <= HIGHRANGE_MAX_TEMP_F);
@@ -205,12 +367,12 @@ namespace esphome
                 return;
             }
 
-            // C is doubled in the API; F is sent as-is
-            target_temperature = (spa_temp_scale == TEMP_SCALE::C)
-                ? (uint8_t)roundf(temp * 2.0f)
-                : (uint8_t)roundf(temp);
-
-            { PendingCmd cmd; cmd.type = CmdType::SET_TEMP; cmd.temp_raw = target_temperature; enqueue_cmd(cmd); }
+            PendingCmd temp_cmd;
+            temp_cmd.type = CmdType::SET_TEMP;
+            temp_cmd.target_temperature = temp;  // raw conversion happens at send time
+            temp_cmd.target_field = ExpectedField::TARGET_TEMP;
+            temp_cmd.max_retries = 5;
+            insert_cmd(temp_cmd);
         }
 
         void BalboaSpa::set_highrange(bool high)
@@ -218,7 +380,7 @@ namespace esphome
             ESP_LOGD(TAG, "highrange=%d to %d requested", get_highrange(), high);
             if (high != get_highrange())
             {
-                enqueue_toggle(tiTempRange);
+                enqueue_toggle(tiTempRange, ExpectedField::HIGHRANGE, high ? 1 : 0, 3);
             }
         }
 
@@ -247,7 +409,8 @@ namespace esphome
             if (get_restmode() != rest)
             {
                 ESP_LOGD(TAG, "Send 0x51 to toggle heat/rest");
-                enqueue_toggle(tiHeatingMode);
+                enqueue_toggle(tiHeatingMode, ExpectedField::REST_MODE,
+                               rest ? (uint8_t)HeatingMode::REST : (uint8_t)HeatingMode::READY, 3);
             }
         }
 
@@ -275,14 +438,26 @@ namespace esphome
             {
                 target_hour = hour;
                 target_minute = minute;
-                { PendingCmd cmd; cmd.type = CmdType::SET_TIME; cmd.time.hour = target_hour; cmd.time.minute = target_minute; enqueue_cmd(cmd); }
+                PendingCmd time_cmd;
+                time_cmd.type = CmdType::SET_TIME;
+                time_cmd.time.hour = target_hour;
+                time_cmd.time.minute = target_minute;
+                time_cmd.target_field = ExpectedField::NONE;
+                time_cmd.max_retries = 0;
+                insert_cmd(time_cmd);
                 ESP_LOGI(TAG, "Spa time set to: %02d:%02d", hour, minute);
             }
         }
 
         void BalboaSpa::set_timescale(bool is_24h)
         {
-            { PendingCmd cmd; cmd.type = CmdType::SET_PREF; cmd.pref.code = 0x02; cmd.pref.data = (uint8_t)(is_24h ? 0x01 : 0x00); enqueue_cmd(cmd); }
+            PendingCmd pref_cmd;
+            pref_cmd.type = CmdType::SET_PREF;
+            pref_cmd.pref.code = 0x02;
+            pref_cmd.pref.data = (uint8_t)(is_24h ? 0x01 : 0x00);
+            pref_cmd.target_field = ExpectedField::CLOCK_24H;
+            pref_cmd.max_retries = 3;
+            insert_cmd(pref_cmd);
         }
 
         void BalboaSpa::set_filter1_config(uint8_t start_hour, uint8_t start_minute, uint8_t duration_hour, uint8_t duration_minute)
@@ -364,33 +539,29 @@ namespace esphome
 
         void BalboaSpa::toggle_light(uint8_t index)
         {
-            enqueue_toggle((uint8_t)(0x10 + index));
+            uint8_t code = (uint8_t)(0x10 + index);
+            ExpectedField field = (index == 1) ? ExpectedField::LIGHT_0 : ExpectedField::LIGHT_1;
+            uint8_t current = (index == 1) ? spaState.lights[0] : spaState.lights[1];
+            uint8_t expected = current ? 0 : 1;
+            enqueue_toggle(code, field, expected, 3);
         }
 
-
-        void BalboaSpa::toggle_jet(uint8_t index, std::function<void()> on_sent)
+        void BalboaSpa::toggle_jet(uint8_t index, uint8_t expected_state, uint8_t max_retries)
         {
-            PendingCmd cmd;
-            cmd.type = CmdType::TOGGLE;
-            cmd.toggle_code = (uint8_t)(tiPump1 - 1 + index); // tiPump1=0x04, tiPump2=0x05, etc.
-            cmd.on_sent = std::move(on_sent);
-            enqueue_cmd(cmd);
+            uint8_t code = (uint8_t)(tiPump1 - 1 + index); // tiPump1=0x04, tiPump2=0x05, etc.
+            ExpectedField field = toggle_code_to_field(code);
+            enqueue_toggle(code, field, expected_state, max_retries);
         }
 
-
-        void BalboaSpa::toggle_blower(std::function<void()> on_sent)
+        void BalboaSpa::toggle_blower(uint8_t expected_state, uint8_t max_retries)
         {
-            PendingCmd cmd;
-            cmd.type = CmdType::TOGGLE;
-            cmd.toggle_code = tiBlower;
-            cmd.on_sent = std::move(on_sent);
-            enqueue_cmd(cmd);
+            enqueue_toggle(tiBlower, ExpectedField::BLOWER, expected_state, max_retries);
         }
 
         void BalboaSpa::clear_reminder()
         {
             ESP_LOGI(TAG, "Clearing spa reminder");
-            enqueue_toggle(0x03);
+            enqueue_toggle(0x03, ExpectedField::NONE, 0, 0);
         }
 
         bool BalboaSpa::read_serial()
@@ -506,6 +677,7 @@ namespace esphome
                         client_id = MAX_CLIENT_ID;
                     ESP_LOGD(TAG, "Spa/node/id: Got ID: %d, acknowledging", client_id);
                 }
+                rebuild_pending_msg();
                 ID_ack();
                 ESP_LOGD(TAG, "Spa/node/id: %d", client_id);
             }
@@ -575,7 +747,6 @@ namespace esphome
                         if(last_state_crc != msg->_suffix._check){
                             ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
                             decodeState(msg);
-                            should_run_update_loop_ = true;
                         }
                         break;
                     }
@@ -610,91 +781,94 @@ namespace esphome
                 ESP_LOGV(TAG, "CTS interval: %u ms", now_cts - last_cts_time);
             last_cts_time = now_cts;
 
-            PendingCmd pending;
-            bool sent = false;
-            while (!sent && dequeue_cmd(pending))
+            if (cmd_count_ > 0 && pending_msg_len_ > 0 && cmd_queue_[0].available_at <= millis())
             {
-                if (millis() - pending.queued_at > 10000)
+                PendingCmd sent = cmd_queue_[0];
+
+                if (millis() - sent.queued_at > 30000)
                 {
-                    ESP_LOGW(TAG, "Dropping expired command type %d (age %u ms)", (int)pending.type, (unsigned)(millis() - pending.queued_at));
-                    continue;
-                }
-                switch (pending.type)
-                {
-                case CmdType::SET_TIME: {
-                    ESP_LOGI(TAG, "Sending SET_TIME %02d:%02d", pending.time.hour, pending.time.minute);
-                    SetSpaTime msg({pending.time.hour, pending.time.minute, false});
-                    send_typed(msg);
-                    break;
-                }
-                case CmdType::SET_TEMP: {
-                    ESP_LOGI(TAG, "Sending SET_TEMP raw=0x%02X", pending.temp_raw);
-                    SetSpaTempMessage msg({pending.temp_raw});
-                    send_typed(msg);
-                    break;
-                }
-                case CmdType::SET_PREF: {
-                    ESP_LOGI(TAG, "Sending SET_PREF code=0x%02X data=0x%02X", pending.pref.code, pending.pref.data);
-                    SetPreferenceMessage msg(pending.pref.code, pending.pref.data);
-                    send_typed(msg);
-                    break;
-                }
-                case CmdType::SET_FILTER: {
-                    ESP_LOGI(TAG, "Sending SET_FILTER f1=%02d:%02d dur=%02d:%02d f2=%s %02d:%02d dur=%02d:%02d",
-                             pending.filter.f1_start_hour, pending.filter.f1_start_minute,
-                             pending.filter.f1_dur_hour, pending.filter.f1_dur_minute,
-                             pending.filter.f2_enable ? "on" : "off",
-                             pending.filter.f2_start_hour, pending.filter.f2_start_minute,
-                             pending.filter.f2_dur_hour, pending.filter.f2_dur_minute);
-                    SetFilterConfigMessage msg(
-                        pending.filter.f1_start_hour, pending.filter.f1_start_minute,
-                        pending.filter.f1_dur_hour,   pending.filter.f1_dur_minute,
-                        pending.filter.f2_enable != 0,
-                        pending.filter.f2_start_hour, pending.filter.f2_start_minute,
-                        pending.filter.f2_dur_hour,   pending.filter.f2_dur_minute);
-                    send_typed(msg);
-                    break;
-                }
-                case CmdType::TOGGLE:
-                default: {
-                    ESP_LOGI(TAG, "Sending TOGGLE 0x%02X", pending.toggle_code);
-                    ToggleItemMessage msg(static_cast<ToggleItem>(pending.toggle_code));
-                    send_typed(msg);
-                    break;
-                }
-                }
-                if (pending.on_sent)
-                    pending.on_sent();
-                sent = true;
-            }
-            if (!sent)
-            {
-                if (config_request_status == 0)
-                {
-                    ControlConfigRequest msg;
-                    send_typed(msg);
-                    ESP_LOGD(TAG, "Spa/config/status: %s", "Getting config");
-                    config_request_status = 1;
-                }
-                else if (faultlog_request_status == 0)
-                {
-                    FaultLogRequest msg;
-                    send_typed(msg);
-                    faultlog_request_status = 1;
-                    ESP_LOGD(TAG, "Spa/debug/faultlog_request_status: %s", "requesting fault log, #1");
-                }
-                else if (filtersettings_request_status == 0 && faultlog_request_status == 2)
-                {
-                    FilterConfigRequest msg;
-                    send_typed(msg);
-                    ESP_LOGD(TAG, "Spa/debug/filtersettings_request_status: %s", "requesting filter settings");
-                    filtersettings_request_status = 1;
+                    ESP_LOGW(TAG, "Dropping expired command field=%d type=%d (age %u ms)",
+                             (int)sent.target_field, (int)sent.type,
+                             (unsigned)(millis() - sent.queued_at));
                 }
                 else
                 {
-                    NothingToSendMessage msg;
-                    send_typed(msg);
+                    write_byte(0x7E);
+                    write_array(pending_msg_buf_, pending_msg_len_);
+                    write_byte(0x7E);
+                    flush();
+
+                    switch (sent.type)
+                    {
+                    case CmdType::SET_TIME:
+                        ESP_LOGI(TAG, "Sending SET_TIME %02d:%02d", sent.time.hour, sent.time.minute);
+                        break;
+                    case CmdType::SET_TEMP:
+                        ESP_LOGI(TAG, "Sending SET_TEMP %.1f (attempt %d/%d)",
+                                 sent.target_temperature, sent.retry_count + 1, sent.max_retries + 1);
+                        break;
+                    case CmdType::SET_PREF:
+                        ESP_LOGI(TAG, "Sending SET_PREF code=0x%02X data=0x%02X (attempt %d/%d)",
+                                 sent.pref.code, sent.pref.data,
+                                 sent.retry_count + 1, sent.max_retries + 1);
+                        break;
+                    case CmdType::SET_FILTER:
+                        ESP_LOGI(TAG, "Sending SET_FILTER f1=%02d:%02d dur=%02d:%02d f2=%s %02d:%02d dur=%02d:%02d (attempt %d/%d)",
+                                 sent.filter.f1_start_hour, sent.filter.f1_start_minute,
+                                 sent.filter.f1_dur_hour, sent.filter.f1_dur_minute,
+                                 sent.filter.f2_enable ? "on" : "off",
+                                 sent.filter.f2_start_hour, sent.filter.f2_start_minute,
+                                 sent.filter.f2_dur_hour, sent.filter.f2_dur_minute,
+                                 sent.retry_count + 1, sent.max_retries + 1);
+                        break;
+                    case CmdType::TOGGLE:
+                    default:
+                        ESP_LOGI(TAG, "Sending TOGGLE 0x%02X field=%d expected=%d (attempt %d/%d)",
+                                 sent.toggle_code, (int)sent.target_field, sent.expected_toggle_value,
+                                 sent.retry_count + 1, sent.max_retries + 1);
+                        break;
+                    }
+
+                    remove_at(0);
+                    if (sent.target_field != ExpectedField::NONE && sent.retry_count < sent.max_retries)
+                    {
+                        sent.retry_count++;
+                        sent.available_at = millis() + RETRY_BACKOFF_MS;
+                        insert_cmd(sent);  // rebuilds automatically
+                    }
+                    else
+                    {
+                        rebuild_pending_msg();
+                    }
                 }
+                return;
+            }
+
+            if (config_request_status == 0)
+            {
+                ControlConfigRequest msg;
+                send_typed(msg);
+                ESP_LOGD(TAG, "Spa/config/status: %s", "Getting config");
+                config_request_status = 1;
+            }
+            else if (faultlog_request_status == 0)
+            {
+                FaultLogRequest msg;
+                send_typed(msg);
+                faultlog_request_status = 1;
+                ESP_LOGD(TAG, "Spa/debug/faultlog_request_status: %s", "requesting fault log, #1");
+            }
+            else if (filtersettings_request_status == 0 && faultlog_request_status == 2)
+            {
+                FilterConfigRequest msg;
+                send_typed(msg);
+                ESP_LOGD(TAG, "Spa/debug/filtersettings_request_status: %s", "requesting filter settings");
+                filtersettings_request_status = 1;
+            }
+            else
+            {
+                NothingToSendMessage msg;
+                send_typed(msg);
             }
         }
 
@@ -759,6 +933,7 @@ namespace esphome
             highrange_dirty_ |= (newState.highrange & 0x1) != (spaState.highrange & 0x1);
 
             spaState = newState;
+            prune_satisfied();
 
             last_state_crc = msg->_suffix._check;
             last_status_received_ms_ = millis();
@@ -792,6 +967,7 @@ namespace esphome
 
             filtersettings_request_status = 2;
             filtersettings_update_timer = 0; // Reset timer after successful decode
+            prune_satisfied();
 
             for (const auto &filter_listener : this->filter_listeners_)
             {

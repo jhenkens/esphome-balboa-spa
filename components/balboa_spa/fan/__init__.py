@@ -20,12 +20,8 @@ CONF_JET_1 = "jet_1"
 CONF_JET_2 = "jet_2"
 CONF_JET_3 = "jet_3"
 CONF_JET_4 = "jet_4"
-CONF_MAX_TOGGLE_ATTEMPTS = "max_toggle_attempts"
-
 def jet_fan_schema():
-    return fan.fan_schema(JetFan).extend({
-        cv.Optional(CONF_MAX_TOGGLE_ATTEMPTS, default=5): cv.positive_int,
-    })
+    return fan.fan_schema(JetFan)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -44,5 +40,3 @@ async def to_code(config):
             fan_var = cg.new_Pvariable(conf[CONF_ID], jet_index)
             await fan.register_fan(fan_var, conf)
             cg.add(fan_var.set_parent(parent))
-            if CONF_MAX_TOGGLE_ATTEMPTS in conf:
-                cg.add(fan_var.set_max_toggle_attempts(conf[CONF_MAX_TOGGLE_ATTEMPTS]))

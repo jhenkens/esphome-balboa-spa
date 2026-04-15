@@ -34,7 +34,6 @@ CONF_BLOWER = "blower"
 CONF_HIGHRANGE = "highrange"
 CONF_FILTER2 = "filter2"
 CONF_REST_MODE = "rest_mode"
-CONF_MAX_TOGGLE_ATTEMPTS = "max_toggle_attempts"
 CONF_ON_LEVEL = "on_level"
 
 def jet_switch_schema(cls):
@@ -43,7 +42,6 @@ def jet_switch_schema(cls):
         icon="mdi:pump",
         default_restore_mode="DISABLED",
     ).extend({
-        cv.Optional(CONF_MAX_TOGGLE_ATTEMPTS, default=5): cv.positive_int,
         cv.Optional(CONF_ON_LEVEL, default=1): cv.one_of(1, 2, int=True),
     })
 
@@ -94,8 +92,6 @@ async def to_code(config):
             sw_var = cg.new_Pvariable(conf[CONF_ID], jet_index)
             await switch.register_switch(sw_var, conf)
             cg.add(sw_var.set_parent(parent))
-            if CONF_MAX_TOGGLE_ATTEMPTS in conf:
-                cg.add(sw_var.set_max_toggle_attempts(conf[CONF_MAX_TOGGLE_ATTEMPTS]))
             if CONF_ON_LEVEL in conf:
                 cg.add(sw_var.set_on_level(conf[CONF_ON_LEVEL]))
 
@@ -114,5 +110,3 @@ async def to_code(config):
         if conf := config.get(switch_type):
             sw_var = await switch.new_switch(conf)
             cg.add(sw_var.set_parent(parent))
-            if CONF_MAX_TOGGLE_ATTEMPTS in conf:
-                cg.add(sw_var.set_max_toggle_attempts(conf[CONF_MAX_TOGGLE_ATTEMPTS]))

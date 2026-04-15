@@ -28,6 +28,7 @@ namespace esphome
                 circulation = 0;
                 cleanup_cycle = 0;
             }
+
             // Convert raw API byte to a float in the spa's native unit.
             // Celsius values are doubled in the API, so divide by 2.
             static float convert_raw_temp(uint8_t raw, TEMP_SCALE spa_scale)
