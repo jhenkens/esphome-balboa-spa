@@ -11,11 +11,7 @@ namespace esphome
 
         void BalboaSpaThermostat::set_parent(BalboaSpa *parent)
         {
-            bool fahrenheit = false;
-#ifdef USE_CLIMATE_TEMPERATURE_UNIT
-            fahrenheit = this->temperature_unit_override_ == climate::ClimateTemperatureUnit::CLIMATE_TEMPERATURE_UNIT_FAHRENHEIT;
-#endif
-            spa_temp_init(parent, fahrenheit);
+            spa_temp_init(parent);
         }
 
         climate::ClimateTraits BalboaSpaThermostat::traits()
@@ -32,6 +28,7 @@ namespace esphome
             traits_.set_visual_min_temperature(range_min());
             traits_.set_visual_max_temperature(range_max());
             traits_.set_visual_temperature_step(temp_step());
+            traits_.set_temperature_unit(is_fahrenheit() ? esphome::TemperatureUnit::FAHRENHEIT : esphome::TemperatureUnit::CELSIUS);
         }
 
         void BalboaSpaThermostat::control(const climate::ClimateCall &call)

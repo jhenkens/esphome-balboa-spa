@@ -31,7 +31,7 @@ CONF_JET4 = "jet4"
 CONF_LIGHTS = "light"
 CONF_LIGHT2 = "light2"
 CONF_BLOWER = "blower"
-CONF_HIGHRANGE = "highrange"
+CONF_HIGH_RANGE = "high_range"
 CONF_FILTER2 = "filter2"
 CONF_REST_MODE = "rest_mode"
 CONF_ON_LEVEL = "on_level"
@@ -67,7 +67,7 @@ CONFIG_SCHEMA = cv.Schema(
             icon=ICON_GRAIN,
             default_restore_mode="DISABLED",
         ),
-        cv.Optional(CONF_HIGHRANGE): switch.switch_schema(
+        cv.Optional(CONF_HIGH_RANGE): switch.switch_schema(
             HighrangeSwitch,
             icon=ICON_THERMOMETER,
             default_restore_mode="DISABLED",
@@ -103,7 +103,7 @@ async def to_code(config):
 
     for switch_type, cls in [
         (CONF_BLOWER, BlowerSwitch),
-        (CONF_HIGHRANGE, HighrangeSwitch),
+        (CONF_HIGH_RANGE, HighrangeSwitch),
         (CONF_FILTER2, Filter2Switch),
         (CONF_REST_MODE, RestModeSwitch),
     ]:

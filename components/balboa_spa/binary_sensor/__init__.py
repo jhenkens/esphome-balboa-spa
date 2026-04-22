@@ -22,10 +22,10 @@ SpaSensor = balboa_spa_ns.class_("BalboaSpaBinarySensors", binary_sensor.BinaryS
 SpaSensorTypeEnum = SpaSensor.enum("BalboaSpaBinarySensorType", True)
 
 CONF_BLOWER = "blower"
-CONF_HIGHRANGE = "highrange"
+CONF_HIGH_RANGE = "high_range"
 CONF_CIRCULATION = "circulation"
-CONF_RESTMODE = "restmode"
-CONF_HEATSTATE = "heatstate"
+CONF_REST_MODE = "rest_mode"
+CONF_HEAT_STATE = "heat_state"
 CONF_CONNECTED = "connected"
 CONF_FILTER1_WINDOW_ACTIVE = "filter1_window_active"
 CONF_FILTER2_WINDOW_ACTIVE = "filter2_window_active"
@@ -40,7 +40,7 @@ CONFIG_SCHEMA = cv.Schema(
             device_class=DEVICE_CLASS_POWER,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
-        cv.Optional(CONF_HIGHRANGE): binary_sensor.binary_sensor_schema(
+        cv.Optional(CONF_HIGH_RANGE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
@@ -50,11 +50,11 @@ CONFIG_SCHEMA = cv.Schema(
             device_class=DEVICE_CLASS_RUNNING,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
-        cv.Optional(CONF_RESTMODE): binary_sensor.binary_sensor_schema(
+        cv.Optional(CONF_REST_MODE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
-        cv.Optional(CONF_HEATSTATE): binary_sensor.binary_sensor_schema(
+        cv.Optional(CONF_HEAT_STATE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             device_class=DEVICE_CLASS_POWER,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
@@ -95,8 +95,8 @@ async def to_code(config):
     parent = await cg.get_variable(config[CONF_SPA_ID])
 
     sensor_types = [
-        CONF_BLOWER, CONF_HIGHRANGE, CONF_CIRCULATION, CONF_RESTMODE,
-        CONF_HEATSTATE, CONF_CONNECTED, CONF_FILTER1_WINDOW_ACTIVE,
+        CONF_BLOWER, CONF_HIGH_RANGE, CONF_CIRCULATION, CONF_REST_MODE,
+        CONF_HEAT_STATE, CONF_CONNECTED, CONF_FILTER1_WINDOW_ACTIVE,
         CONF_FILTER2_WINDOW_ACTIVE, CONF_CLEANUP_CYCLE, CONF_TIME_SYNCED
     ]
     for sensor_type in sensor_types:

@@ -10,8 +10,7 @@ namespace esphome
 
         void SpaTargetTempNumber::set_parent(BalboaSpa *parent)
         {
-            bool fahrenheit = this->get_unit_of_measurement_ref().compare("°F") == 0;
-            spa_temp_init(parent, fahrenheit);
+            spa_temp_init(parent, this->get_unit_of_measurement_ref().compare("°F") == 0 ? TEMP_SCALE::F : TEMP_SCALE::UNKNOWN);
             update_traits();
         }
 

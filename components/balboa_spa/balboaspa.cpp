@@ -123,7 +123,7 @@ namespace esphome
             case tiBlower:      return ExpectedField::BLOWER;
             case 0x11:          return ExpectedField::LIGHT_0;
             case 0x12:          return ExpectedField::LIGHT_1;
-            case tiTempRange:   return ExpectedField::HIGHRANGE;
+            case tiTempRange:   return ExpectedField::HIGH_RANGE;
             case tiHeatingMode: return ExpectedField::REST_MODE;
             default:            return ExpectedField::NONE;
             }
@@ -140,7 +140,7 @@ namespace esphome
             case ExpectedField::BLOWER:   return spaState.blower == cmd.expected_toggle_value;
             case ExpectedField::LIGHT_0:  return spaState.lights[0] == cmd.expected_toggle_value;
             case ExpectedField::LIGHT_1:  return spaState.lights[1] == cmd.expected_toggle_value;
-            case ExpectedField::HIGHRANGE: return (spaState.highrange & 0x1) == cmd.expected_toggle_value;
+            case ExpectedField::HIGH_RANGE: return (spaState.highrange & 0x1) == cmd.expected_toggle_value;
             case ExpectedField::REST_MODE: return (uint8_t)spaState.rest_mode == cmd.expected_toggle_value;
             case ExpectedField::TARGET_TEMP:
                 return !std::isnan(spaState.target_temp) && spaState.target_temp == cmd.target_temperature;
@@ -380,7 +380,7 @@ namespace esphome
             ESP_LOGD(TAG, "highrange=%d to %d requested", get_highrange(), high);
             if (high != get_highrange())
             {
-                enqueue_toggle(tiTempRange, ExpectedField::HIGHRANGE, high ? 1 : 0, 3);
+                enqueue_toggle(tiTempRange, ExpectedField::HIGH_RANGE, high ? 1 : 0, 3);
             }
         }
 

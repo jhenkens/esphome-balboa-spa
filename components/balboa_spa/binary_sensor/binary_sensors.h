@@ -17,10 +17,10 @@ namespace esphome
       {
         UNKNOWN = 0,
         BLOWER,
-        HIGHRANGE,
+        HIGH_RANGE,
         CIRCULATION,
-        RESTMODE,
-        HEATSTATE,
+        REST_MODE,
+        HEAT_STATE,
         CONNECTED,
         FILTER1_WINDOW_ACTIVE,
         FILTER2_WINDOW_ACTIVE,

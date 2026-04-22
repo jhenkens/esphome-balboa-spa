@@ -10,8 +10,7 @@ namespace esphome
 
         void BalboaSpaSensors::set_parent(BalboaSpa *parent)
         {
-            bool fahrenheit = this->get_unit_of_measurement_ref().compare("°F") == 0;
-            spa_temp_init(parent, fahrenheit, false);
+            spa_temp_init(parent, false, this->get_unit_of_measurement_ref().compare("°F") == 0 ? TEMP_SCALE::F : TEMP_SCALE::UNKNOWN);
         }
 
         void BalboaSpaSensors::update()
@@ -47,18 +46,18 @@ namespace esphome
             case BalboaSpaSensorType::BLOWER:
                 sensor_state_value = spaState->blower;
                 break;
-            case BalboaSpaSensorType::HIGHRANGE:
+            case BalboaSpaSensorType::HIGH_RANGE:
                 sensor_state_value = spaState->highrange;
                 break;
             case BalboaSpaSensorType::CIRCULATION:
                 sensor_state_value = spaState->circulation;
                 break;
-            case BalboaSpaSensorType::RESTMODE:
+            case BalboaSpaSensorType::REST_MODE:
                 if (spaState->rest_mode == HeatingMode::NOT_YET_RECEIVED)
                     return;
                 sensor_state_value = (uint8_t)spaState->rest_mode;
                 break;
-            case BalboaSpaSensorType::HEATSTATE:
+            case BalboaSpaSensorType::HEAT_STATE:
                 sensor_state_value = spaState->heat_state;
                 if (sensor_state_value == 254)
                     return;

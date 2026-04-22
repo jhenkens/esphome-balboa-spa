@@ -32,7 +32,6 @@ namespace esphome
       void control(const water_heater::WaterHeaterCall &call) override;
       water_heater::WaterHeaterTraits traits() override;
       water_heater::WaterHeaterTraits traits_ = water_heater::WaterHeaterTraits();
-
     };
 
   } // namespace balboa_spa

@@ -37,7 +37,7 @@ namespace esphome
             BLOWER      = 5,
             LIGHT_0     = 6,
             LIGHT_1     = 7,
-            HIGHRANGE   = 8,
+            HIGH_RANGE   = 8,
             REST_MODE   = 9,
             TARGET_TEMP = 10,
             CLOCK_24H   = 11,

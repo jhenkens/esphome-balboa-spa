@@ -79,19 +79,19 @@ namespace esphome
             case BalboaSpaBinarySensorType::BLOWER:
                 sensor_state_value = spaState->blower;
                 break;
-            case BalboaSpaBinarySensorType::HIGHRANGE:
+            case BalboaSpaBinarySensorType::HIGH_RANGE:
                 sensor_state_value = spaState->highrange;
                 break;
             case BalboaSpaBinarySensorType::CIRCULATION:
                 sensor_state_value = spaState->circulation;
                 break;
-            case BalboaSpaBinarySensorType::RESTMODE:
+            case BalboaSpaBinarySensorType::REST_MODE:
                 if (spaState->rest_mode == HeatingMode::NOT_YET_RECEIVED)
                     return;
                 sensor_state_value = (spaState->rest_mode == HeatingMode::REST ||
                                       spaState->rest_mode == HeatingMode::READY_IN_REST);
                 break;
-            case BalboaSpaBinarySensorType::HEATSTATE:
+            case BalboaSpaBinarySensorType::HEAT_STATE:
                 state_value = spaState->heat_state;
                 if (state_value != 254)
                 {

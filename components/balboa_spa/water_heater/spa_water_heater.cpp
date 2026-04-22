@@ -11,11 +11,7 @@ namespace esphome
 
         void BalboaSpaWaterHeater::set_parent(BalboaSpa *parent)
         {
-            bool fahrenheit = false;
-#ifdef USE_WATER_HEATER_TEMPERATURE_UNIT
-            fahrenheit = this->temperature_unit_override_ == water_heater::WaterHeaterTemperatureUnit::WATER_HEATER_TEMPERATURE_UNIT_FAHRENHEIT;
-#endif
-            spa_temp_init(parent, fahrenheit);
+            spa_temp_init(parent);
         }
 
         water_heater::WaterHeaterTraits BalboaSpaWaterHeater::traits()
@@ -35,6 +31,7 @@ namespace esphome
             traits_.set_min_temperature(range_min());
             traits_.set_max_temperature(range_max());
             traits_.set_target_temperature_step(temp_step());
+            traits_.set_temperature_unit(is_fahrenheit() ? esphome::TemperatureUnit::FAHRENHEIT : esphome::TemperatureUnit::CELSIUS);
         }
 
         void BalboaSpaWaterHeater::update()

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include "balboaspa.h"
+#include "esphome/core/string_ref.h"
 
 namespace esphome
 {
@@ -16,20 +17,29 @@ namespace esphome
         public:
             virtual void update() = 0;
             virtual void update_traits() = 0;
+            void set_temp_scale(TEMP_SCALE scale) { temp_scale_ = scale; }
 
         protected:
+            void spa_temp_init(BalboaSpa *spa, TEMP_SCALE scale = TEMP_SCALE::UNKNOWN){
+                this->spa_temp_init(spa, true, scale);
+            }
             // Call in set_parent(), passing the component's unit_of_measurement.
             // Stores the spa pointer, sets the display unit, and registers the
             // highrange and state listeners via virtual dispatch.
             // fahrenheit = true  → display °F
             // fahrenheit = false → display °C
-            void spa_temp_init(BalboaSpa *spa, bool fahrenheit, bool includeHighrangeListener = true)
+            void spa_temp_init(BalboaSpa *spa, bool includeHighrangeListener, TEMP_SCALE scale = TEMP_SCALE::UNKNOWN)
             {
                 spa_ = spa;
-                temp_scale_ = fahrenheit ? TEMP_SCALE::F : TEMP_SCALE::C;
                 if (spa_->get_live_range_refresh() && includeHighrangeListener)
                     spa_->register_highrange_listener([this]() { update_traits(); });
                 spa_->register_listener([this]() { update(); });
+                if(scale != TEMP_SCALE::UNKNOWN){
+                    temp_scale_ = scale;
+                }
+                if(temp_scale_ == TEMP_SCALE::UNKNOWN){
+                    temp_scale_ = TEMP_SCALE::C; 
+                }
             }
 
             bool is_fahrenheit() const { return temp_scale_ == TEMP_SCALE::F; }
