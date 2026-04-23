@@ -35,6 +35,18 @@ namespace esphome
             input_started = false;
             filtersettings_update_timer = 0;
             setup_time_ = millis();
+
+            if (remember_client_id_)
+            {
+                client_id_pref_ = global_preferences->make_preference<uint8_t>(fnv1_hash("balboa_spa_client_id"));
+                uint8_t saved_id = 0;
+                if (client_id_pref_.load(&saved_id) && saved_id >= 1 && saved_id <= MAX_CLIENT_ID)
+                {
+                    remembered_client_id_ = saved_id;
+                    use_remembered_client_id_ = true;
+                    ESP_LOGD(TAG, "Restored client ID 0x%02X from preferences", saved_id);
+                }
+            }
         }
 
         void BalboaSpa::update()
@@ -52,7 +64,12 @@ namespace esphome
                     last_dead_log_time = now;
                 }
                 status_set_error(LOG_STR("No Communication with Balboa Mainboard!"));
-                client_id = 0;
+                if (client_id != 0)
+                {
+                    client_id = 0;
+                    for (const auto &listener : this->client_id_listeners_)
+                        listener();
+                }
             }
             else if (status_has_error())
             {
@@ -129,8 +146,15 @@ namespace esphome
             }
         }
 
-        bool BalboaSpa::is_expected_satisfied(const PendingCmd &cmd) const
+        bool BalboaSpa::is_satisfied(const PendingCmd &cmd) const
         {
+            if (cmd.type == CmdType::SET_FILTER)
+                return filter_cmd_satisfied(cmd);
+            if (cmd.type == CmdType::SET_TEMP)
+                return (spa_temp_scale != TEMP_SCALE::C && spa_temp_scale != TEMP_SCALE::F)
+                    || (!std::isnan(spaState.target_temp) && spaState.target_temp == cmd.target_temperature);
+            if (cmd.type == CmdType::SET_TIME)
+                return spaState.hour == cmd.time.hour && spaState.minutes == cmd.time.minute;
             switch (cmd.target_field)
             {
             case ExpectedField::JET_0:    return spaState.jets[0] == cmd.expected_toggle_value;
@@ -148,7 +172,6 @@ namespace esphome
                 return (uint8_t)clock_mode_24hr == cmd.pref.data;
             case ExpectedField::NONE:
             case ExpectedField::FILTER:
-                return true;
             default:
                 return false;
             }
@@ -183,12 +206,6 @@ namespace esphome
             }
 
             const PendingCmd &head = cmd_queue_[0];
-
-            if (head.type == CmdType::SET_TEMP &&
-                spa_temp_scale != TEMP_SCALE::C && spa_temp_scale != TEMP_SCALE::F) {
-                pending_msg_len_ = 0;
-                return;
-            }
 
             // Skip rebuild if the head command hasn't changed
             if (pending_msg_len_ > 0 &&
@@ -250,19 +267,13 @@ namespace esphome
             pending_cmd_ = head;
         }
 
-        void BalboaSpa::prune_satisfied()
+        void BalboaSpa::prune_and_rebuild()
         {
             uint8_t i = 0;
             while (i < cmd_count_)
             {
                 const PendingCmd &c = cmd_queue_[i];
-                bool satisfied = false;
-                if (c.target_field == ExpectedField::FILTER)
-                    satisfied = filter_cmd_satisfied(c);
-                else if (c.target_field != ExpectedField::NONE)
-                    satisfied = is_expected_satisfied(c);
-
-                if (satisfied)
+                if (is_satisfied(c))
                 {
                     ESP_LOGD(TAG, "Command field=%d satisfied, removing", (int)c.target_field);
                     remove_at(i);
@@ -277,7 +288,7 @@ namespace esphome
 
         void BalboaSpa::insert_cmd(PendingCmd cmd)
         {
-            if(is_expected_satisfied(cmd)) {
+            if (is_satisfied(cmd)) {
                 ESP_LOGD(TAG, "Command field=%d already satisfied, not adding to queue", (int)cmd.target_field);
                 return;
             }
@@ -315,7 +326,7 @@ namespace esphome
             }
             cmd_queue_[pos] = cmd;
             cmd_count_++;
-            rebuild_pending_msg();
+            prune_and_rebuild();
         }
 
 
@@ -668,18 +679,29 @@ namespace esphome
                 if (use_client_id_override)
                 {
                     client_id = client_id_override;
-                    ESP_LOGD(TAG, "Spa/node/id: Using override ID: %d, acknowledging", client_id);
+                    ESP_LOGI(TAG, "Spa/node/id: Using override ID: 0x%02X, acknowledging", client_id);
+                }
+                else if (use_remembered_client_id_)
+                {
+                    client_id = remembered_client_id_;
+                    ESP_LOGI(TAG, "Spa/node/id: Using remembered ID: 0x%02X, acknowledging", client_id);
                 }
                 else
                 {
                     client_id = input_buffer[4];
                     if (client_id > MAX_CLIENT_ID)
                         client_id = MAX_CLIENT_ID;
-                    ESP_LOGD(TAG, "Spa/node/id: Got ID: %d, acknowledging", client_id);
+                    ESP_LOGI(TAG, "Spa/node/id: Got ID: 0x%02X, acknowledging", client_id);
+                    if (remember_client_id_)
+                    {
+                        client_id_pref_.save(&client_id);
+                        ESP_LOGI(TAG, "Saved client ID 0x%02X to preferences", client_id);
+                    }
                 }
-                rebuild_pending_msg();
                 ID_ack();
-                ESP_LOGD(TAG, "Spa/node/id: %d", client_id);
+                ESP_LOGD(TAG, "Spa/node/id: 0x%02X", client_id);
+                for (const auto &listener : this->client_id_listeners_)
+                    listener();
             }
 
             // FE BF 00:Any new clients?
@@ -838,7 +860,7 @@ namespace esphome
                     }
                     else
                     {
-                        rebuild_pending_msg();
+                        prune_and_rebuild();
                     }
                 }
                 return;
@@ -933,7 +955,7 @@ namespace esphome
             highrange_dirty_ |= (newState.highrange & 0x1) != (spaState.highrange & 0x1);
 
             spaState = newState;
-            prune_satisfied();
+            prune_and_rebuild();
 
             last_state_crc = msg->_suffix._check;
             last_status_received_ms_ = millis();
@@ -967,7 +989,7 @@ namespace esphome
 
             filtersettings_request_status = 2;
             filtersettings_update_timer = 0; // Reset timer after successful decode
-            prune_satisfied();
+            prune_and_rebuild();
 
             for (const auto &filter_listener : this->filter_listeners_)
             {
@@ -1076,6 +1098,25 @@ namespace esphome
         bool BalboaSpa::is_communicating()
         {
             return client_id != 0;
+        }
+
+        void BalboaSpa::reconnect()
+        {
+            ESP_LOGD(TAG, "Reconnect requested, clearing client ID");
+            if (use_remembered_client_id_)
+            {
+                use_remembered_client_id_ = false;
+                remembered_client_id_ = 0;
+                if (remember_client_id_)
+                {
+                    uint8_t zero = 0;
+                    client_id_pref_.save(&zero);
+                    ESP_LOGI(TAG, "Cleared remembered client ID from preferences");
+                }
+            }
+            client_id = 0;
+            for (const auto &listener : this->client_id_listeners_)
+                listener();
         }
 
         void BalboaSpa::set_client_id(uint8_t id)

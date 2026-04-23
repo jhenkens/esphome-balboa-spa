@@ -10,6 +10,7 @@ CONF_CLIENT_ID = "client_id"
 CONF_LISTENER_KEEPALIVE = "listener_keepalive"
 CONF_STARTUP_DELAY = "startup_delay"
 CONF_LIVE_RANGE_REFRESH = "live_range_refresh"
+CONF_REMEMBER_CLIENT_ID = "remember_client_id"
 
 balboa_spa_ns = cg.esphome_ns.namespace('balboa_spa')
 BalboaSpa = balboa_spa_ns.class_('BalboaSpa', cg.Component, uart.UARTDevice)
@@ -20,6 +21,7 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_LISTENER_KEEPALIVE, default=300000): cv.positive_int,
     cv.Optional(CONF_STARTUP_DELAY, default=10000): cv.positive_int,
     cv.Optional(CONF_LIVE_RANGE_REFRESH, default=False): cv.boolean,
+    cv.Optional(CONF_REMEMBER_CLIENT_ID, default=True): cv.boolean,
 }).extend(cv.COMPONENT_SCHEMA).extend(uart.UART_DEVICE_SCHEMA)
 
 def to_code(config):
@@ -32,5 +34,6 @@ def to_code(config):
     cg.add(var.set_listener_keepalive(config[CONF_LISTENER_KEEPALIVE]))
     cg.add(var.set_startup_delay(config[CONF_STARTUP_DELAY]))
     cg.add(var.set_live_range_refresh(config[CONF_LIVE_RANGE_REFRESH]))
+    cg.add(var.set_remember_client_id(config[CONF_REMEMBER_CLIENT_ID]))
 
     yield uart.register_uart_device(var, config)

@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/log.h"
+#include "esphome/core/preferences.h"
 
 #define BUFFER_LENGTH 100
 
@@ -79,6 +80,9 @@ namespace esphome
             TEMP_SCALE get_spa_temp_scale() { return spa_temp_scale; }
             uint32_t get_time_since_last_status_ms() { return millis() - last_status_received_ms_; }
             void set_client_id(uint8_t id);
+            void set_remember_client_id(bool v) { remember_client_id_ = v; }
+            uint8_t get_client_id() const { return client_id; }
+            void reconnect();
             void set_listener_keepalive(uint32_t ms) { listener_keepalive_ms_ = ms; }
             void set_startup_delay(uint32_t ms) { startup_delay_ms_ = ms; }
 
@@ -88,6 +92,7 @@ namespace esphome
             void register_filter_listener(const std::function<void(SpaFilterSettings *)> &func) { this->filter_listeners_.push_back(func); }
             void register_fault_log_listener(const std::function<void(SpaFaultLog *)> &func) { this->fault_log_listeners_.push_back(func); }
             void register_highrange_listener(const std::function<void()> &func) { this->highrange_listeners_.push_back(func); }
+            void register_client_id_listener(const std::function<void()> &func) { this->client_id_listeners_.push_back(func); }
 
             bool get_heating();
             bool get_restmode();
@@ -172,9 +177,9 @@ namespace esphome
             void enqueue_toggle(uint8_t code, ExpectedField field, uint8_t expected_toggle_value, uint8_t max_retries);
             void enqueue_current_filter();
             static ExpectedField toggle_code_to_field(uint8_t code);
-            bool is_expected_satisfied(const PendingCmd &cmd) const;
+            bool is_satisfied(const PendingCmd &cmd) const;
             bool filter_cmd_satisfied(const PendingCmd &cmd) const;
-            void prune_satisfied();
+            void prune_and_rebuild();
 
             // Staging fields for commands that are built incrementally
             uint8_t target_hour = 0x00;
@@ -189,8 +194,12 @@ namespace esphome
             uint8_t target_filter2_duration_minute = 0x00;
             bool target_filter2_enable = false;
             uint8_t client_id = 0x00;
-            uint8_t client_id_override = 0x00;
+            uint8_t client_id_override = 0x00;      // set via YAML client_id:, never cleared
             bool use_client_id_override = false;
+            uint8_t remembered_client_id_ = 0x00;   // loaded from NVS, cleared on reconnect
+            bool use_remembered_client_id_ = false;
+            bool remember_client_id_ = false;
+            ESPPreferenceObject client_id_pref_;
             uint32_t last_received_time = 0;
             uint32_t last_status_received_ms_ = 0;
             uint32_t last_dead_log_time = 0;
@@ -210,6 +219,7 @@ namespace esphome
             std::vector<std::function<void(SpaFilterSettings *)>> filter_listeners_;
             std::vector<std::function<void(SpaFaultLog *)>> fault_log_listeners_;
             std::vector<std::function<void()>> highrange_listeners_;
+            std::vector<std::function<void()>> client_id_listeners_;
 
             char config_request_status = 0;           // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> further processed it
             char faultlog_request_status = 0;         // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> further processed it
