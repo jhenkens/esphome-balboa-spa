@@ -367,7 +367,7 @@ namespace esphome
                 return;
             }
 
-            // temp is in the spa's native unit — validate range
+            // temp is in the spa's native unit — validate overall range
             bool valid = (spa_temp_scale == TEMP_SCALE::C)
                 ? (temp >= LOWRANGE_MIN_TEMP_C && temp <= HIGHRANGE_MAX_TEMP_C)
                 : (temp >= LOWRANGE_MIN_TEMP_F && temp <= HIGHRANGE_MAX_TEMP_F);
@@ -377,6 +377,20 @@ namespace esphome
                 ESP_LOGW(TAG, "set_temp(%f): out of range for spa scale %d", temp, spa_temp_scale);
                 return;
             }
+
+            // Auto-switch range if temp is outside the current range's bounds.
+            // Temps in the overlap zone (HIGHRANGE_MIN..LOWRANGE_MAX) require no range change.
+            bool needs_high = (spa_temp_scale == TEMP_SCALE::C)
+                ? (temp > LOWRANGE_MAX_TEMP_C)
+                : (temp > LOWRANGE_MAX_TEMP_F);
+            bool needs_low = (spa_temp_scale == TEMP_SCALE::C)
+                ? (temp < HIGHRANGE_MIN_TEMP_C)
+                : (temp < HIGHRANGE_MIN_TEMP_F);
+
+            if (needs_high)
+                set_highrange(true);
+            else if (needs_low)
+                set_highrange(false);
 
             PendingCmd temp_cmd;
             temp_cmd.type = CmdType::SET_TEMP;
