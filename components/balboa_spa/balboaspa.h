@@ -198,7 +198,7 @@ namespace esphome
             bool use_client_id_override = false;
             uint8_t remembered_client_id_ = 0x00;   // loaded from NVS, cleared on reconnect
             bool use_remembered_client_id_ = false;
-            bool remember_client_id_ = false;
+            bool remember_client_id_ = true;
             ESPPreferenceObject client_id_pref_;
             uint32_t last_received_time = 0;
             uint32_t last_status_received_ms_ = 0;

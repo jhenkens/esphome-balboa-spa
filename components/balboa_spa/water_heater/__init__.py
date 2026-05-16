@@ -1,8 +1,14 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import water_heater
-from esphome.const import CONF_ID, CONF_UNIT_OF_MEASUREMENT, UNIT_CELSIUS, UNIT_FAHRENHEIT
+from esphome.const import CONF_ID, CONF_UNIT_OF_MEASUREMENT, UNIT_CELSIUS
 from esphome.cpp_generator import AssignmentExpression
+
+
+  try:
+      from esphome.const import UNIT_FAHRENHEIT
+  except ImportError:
+      UNIT_FAHRENHEIT = "°F"
 
 from .. import (
     CONF_SPA_ID,
