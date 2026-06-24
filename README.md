@@ -256,7 +256,7 @@ water_heater:
 | `id` | Required entity ID for referencing the component in other platforms |
 | `uart_id` | ID of the UART bus (use when you have multiple UART buses and need to disambiguate) |
 | `client_id` | Override the automatically assigned client ID (integer, optional) |
-| `remember_client_id` | Persist the negotiated client ID across reboots so the spa doesn't have to re-assign it (boolean, default: `true`) |
+| `remember_client_id` | Persist the negotiated client ID across reboots so the spa doesn't have to re-assign it (boolean, default: `true`). When a cached ID is used, the component automatically validates it 60 seconds after connecting by toggling light 1 on and off. If the spa doesn't respond, the cached ID is cleared and the component reconnects to negotiate a fresh one. This handles the case where the spa restarts and rejects the old ID. |
 | `live_range_refresh` | When enabled, the temperature slider on climate/water_heater entities narrows to the spa's current range (standard or high). When disabled (default), the slider always shows the full spectrum from low-range min to high-range max. Note: Home Assistant does not pick up trait changes at runtime, so the updated range won't be reflected until the device reboots — making this option of limited use. (boolean, default: `false`) |
 
 ### Jet Control: Switch vs Fan

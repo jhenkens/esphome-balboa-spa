@@ -23,7 +23,7 @@ namespace esphome
 
         void SpaTargetTempNumber::update()
         {
-            float newState;
+            float newState = this->state;
             if (!spa_->is_communicating() && !std::isnan(this->state))
             {
                 this->publish_state(NAN);

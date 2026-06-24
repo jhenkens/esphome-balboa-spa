@@ -71,7 +71,7 @@ namespace esphome
                 break;
             }
             default:
-                ESP_LOGD(TAG, "Spa/Sensors/UnknownSensorType: SensorType Number: %d", sensor_type);
+                ESP_LOGD(TAG, "Spa/Sensors/UnknownSensorType: SensorType Number: %d", (int)sensor_type);
                 return;
             }
 

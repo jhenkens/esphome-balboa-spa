@@ -93,10 +93,12 @@ namespace esphome
                 break;
             case BalboaSpaBinarySensorType::HEAT_STATE:
                 state_value = spaState->heat_state;
-                if (state_value != 254)
+                if (state_value == 254)
                 {
-                    sensor_state_value = state_value;
+                    ESP_LOGD(TAG, "Spa/BSensors/HEAT_STATE: not yet received (254), skipping");
+                    return;
                 }
+                sensor_state_value = state_value;
                 break;
             case BalboaSpaBinarySensorType::CONNECTED:
                 sensor_state_value = spa_->is_communicating();
@@ -123,7 +125,7 @@ namespace esphome
                 sensor_state_value = time_is_invalid(spaState->hour, spaState->minutes);
                 break;
             default:
-                ESP_LOGD(TAG, "Spa/BSensors/UnknownSensorType: SensorType Number: %d", sensor_type);
+                ESP_LOGD(TAG, "Spa/BSensors/UnknownSensorType: SensorType Number: %d", (int)sensor_type);
                 // Unknown enum value. Ignore
                 return;
             }

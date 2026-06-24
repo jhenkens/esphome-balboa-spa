@@ -60,7 +60,7 @@ namespace esphome
             {
                 if (now - last_dead_log_time >= 60000)
                 {
-                    ESP_LOGW(TAG, "No new message since %d Seconds! Mark as dead!", (now - last_received_time) / 1000);
+                    ESP_LOGW(TAG, "No new message since %u Seconds! Mark as dead!", (now - last_received_time) / 1000);
                     last_dead_log_time = now;
                 }
                 status_set_error(LOG_STR("No Communication with Balboa Mainboard!"));
@@ -98,6 +98,34 @@ namespace esphome
                 }
             }
             ESP_LOGV(TAG, "Finished processing serial data. Updating sensors if needed...");
+
+            if (used_remembered_client_id_for_session_ && client_id != 0 && !client_id_probe_pending_ &&
+                last_status_received_ms_ != 0 && millis() - client_id_set_at_ms_ >= 60000)
+            {
+                ESP_LOGW(TAG, "Cached client ID 0x%02X in use — probing with light toggle to validate", client_id);
+                client_id_probe_expected_light_state_ = spaState.lights[0] ? 0 : 1;
+                toggle_light(1);
+                client_id_probe_pending_ = true;
+                client_id_probe_queued_at_ = millis();
+            }
+
+            if (client_id_probe_pending_)
+            {
+                if (spaState.lights[0] == client_id_probe_expected_light_state_)
+                {
+                    ESP_LOGI(TAG, "Cached client ID validated — light responded, restoring state");
+                    toggle_light(1);
+                    client_id_probe_pending_ = false;
+                    used_remembered_client_id_for_session_ = false;
+                }
+                else if (millis() - client_id_probe_queued_at_ > 35000)
+                {
+                    ESP_LOGW(TAG, "Cached client ID validation failed — no response to light probe, clearing and reconnecting");
+                    client_id_probe_pending_ = false;
+                    used_remembered_client_id_for_session_ = false;
+                    reconnect();
+                }
+            }
 
             uint32_t now_dispatch = millis();
             bool keepalive = (now_dispatch - last_listener_dispatch_time) >= listener_keepalive_ms_;
@@ -374,7 +402,7 @@ namespace esphome
 
             if (!valid)
             {
-                ESP_LOGW(TAG, "set_temp(%f): out of range for spa scale %d", temp, spa_temp_scale);
+                ESP_LOGW(TAG, "set_temp(%f): out of range for spa scale %d", temp, (int)spa_temp_scale);
                 return;
             }
 
@@ -421,7 +449,7 @@ namespace esphome
 
         bool BalboaSpa::get_highrange()
         {
-            return spaState.highrange & 0x1 == 1;
+            return (spaState.highrange & 0x1) == 1;
         }
 
         void BalboaSpa::toggle_heat()
@@ -698,6 +726,8 @@ namespace esphome
                 else if (use_remembered_client_id_)
                 {
                     client_id = remembered_client_id_;
+                    used_remembered_client_id_for_session_ = true;
+                    client_id_set_at_ms_ = millis();
                     ESP_LOGI(TAG, "Spa/node/id: Using remembered ID: 0x%02X, acknowledging", client_id);
                 }
                 else
@@ -814,7 +844,9 @@ namespace esphome
         {
             uint32_t now_cts = millis();
             if (last_cts_time > 0)
+            {
                 ESP_LOGV(TAG, "CTS interval: %u ms", now_cts - last_cts_time);
+            }
             last_cts_time = now_cts;
 
             if (cmd_count_ > 0 && pending_msg_len_ > 0 && cmd_queue_[0].available_at <= millis())
@@ -826,6 +858,8 @@ namespace esphome
                     ESP_LOGW(TAG, "Dropping expired command field=%d type=%d (age %u ms)",
                              (int)sent.target_field, (int)sent.type,
                              (unsigned)(millis() - sent.queued_at));
+                    remove_at(0);
+                    rebuild_pending_msg();
                 }
                 else
                 {
@@ -950,7 +984,7 @@ namespace esphome
             CLOCK_MODE new_clock_mode_24hr = static_cast<CLOCK_MODE>(msg->_24hrTime);
             if(new_temp_scale != spa_temp_scale || new_clock_mode_24hr != clock_mode_24hr){
                 ESP_LOGD(TAG, "Spa/config changed: temperature_scale %d->%d clock_mode_24hr %d->%d (from status)",
-                         spa_temp_scale, new_temp_scale, clock_mode_24hr, new_clock_mode_24hr);
+                         (int)spa_temp_scale, (int)new_temp_scale, (int)clock_mode_24hr, (int)new_clock_mode_24hr);
                 spa_temp_scale = new_temp_scale;
                 clock_mode_24hr = new_clock_mode_24hr;
             }
@@ -1117,6 +1151,8 @@ namespace esphome
         void BalboaSpa::reconnect()
         {
             ESP_LOGD(TAG, "Reconnect requested, clearing client ID");
+            client_id_probe_pending_ = false;
+            used_remembered_client_id_for_session_ = false;
             if (use_remembered_client_id_)
             {
                 use_remembered_client_id_ = false;

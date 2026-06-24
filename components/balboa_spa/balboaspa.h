@@ -199,6 +199,11 @@ namespace esphome
             uint8_t remembered_client_id_ = 0x00;   // loaded from NVS, cleared on reconnect
             bool use_remembered_client_id_ = false;
             bool remember_client_id_ = true;
+            bool used_remembered_client_id_for_session_ = false;
+            uint32_t client_id_set_at_ms_ = 0;
+            bool client_id_probe_pending_ = false;
+            uint32_t client_id_probe_queued_at_ = 0;
+            uint8_t client_id_probe_expected_light_state_ = 0;
             ESPPreferenceObject client_id_pref_;
             uint32_t last_received_time = 0;
             uint32_t last_status_received_ms_ = 0;
