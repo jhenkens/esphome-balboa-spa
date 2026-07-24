@@ -42,9 +42,8 @@ The retry behaviour has drastically improved jet on/off reliability. It still ta
 
 ### Native Fahrenheit support
 
-This component supports `unit_of_measurement: °F` on the `climate` platform and temperature sensors, bypassing ESPHome/Home Assistant conversion so temperature steps are exact (no rounding artifacts from Celsius conversion). This requires two pending upstream PRs:
+This component supports `unit_of_measurement: °F` on the `climate` platform and temperature sensors, bypassing ESPHome/Home Assistant conversion so temperature steps are exact (no rounding artifacts from Celsius conversion). This requires ESPHome 2026.08 or newer, and likely 2026.09 for Home Assistant.
 
-- **ESPHome** — [esphome/esphome#16477](https://github.com/esphome/esphome/pull/16477): adds `TemperatureUnit` support to `ClimateTraits` and `WaterHeaterTraits`, allowing components to report temperatures in non-Celsius units through the Home Assistant API. Currently open, pending documentation and tests.
 - **Home Assistant** — [home-assistant/core#168747](https://github.com/home-assistant/core/pull/168747): adds native `unit_of_measurement` support to the ESPHome climate and water heater integrations, eliminating floating-point errors from unit conversions. Currently open, awaiting code owner approval.
 
 
