@@ -60,7 +60,7 @@ namespace esphome
             {
                 if (now - last_dead_log_time >= 60000)
                 {
-                    ESP_LOGW(TAG, "No new message since %u Seconds! Mark as dead!", (now - last_received_time) / 1000);
+                    ESP_LOGW(TAG, "No new message since %lu Seconds! Mark as dead!", (now - last_received_time) / 1000);
                     last_dead_log_time = now;
                 }
                 status_set_error(LOG_STR("No Communication with Balboa Mainboard!"));
