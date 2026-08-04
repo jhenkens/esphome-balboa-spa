@@ -2,49 +2,23 @@
 
 An ESPHome external component for Balboa spa controllers, based on prior work from [Dakoriki/ESPHome-Balboa-Spa](https://github.com/Dakoriki/ESPHome-Balboa-Spa), [MHotchin/BalBoaSpa](https://github.com/MHotchin/BalBoaSpa), and [ccutrer/balboa_worldwide_app](https://github.com/ccutrer/balboa_worldwide_app).
 
-This is an extensive rewrite with meaningful structural and functional changes — see [What Changed](#what-changed) below.
+This is an extensive rewrite with meaningful structural and functional changes — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
 
 ## Hardware Setup
 
-This component communicates with the spa over RS485. The spa's RS485 bus is typically accessible via the M7 port on the Balboa controller.
+This component communicates with the spa over RS485, via an ESP32 board and an RS485-to-TTL adapter. For full wiring notes, connector pinouts, and the reasoning behind the parts below, see [docs/HARDWARE.md](docs/HARDWARE.md).
 
-**Tested hardware:**
-- M5Stack Nano C6 (ESP32-C6)
-- M5Stack Unit RS485 ISO (isolated, no power output) — or the non-ISO variant (provides power over Grove connector)
-- 2m Grove connector cable
-- Generic 9–24V to USB-C adapter (only needed with the ISO RS485 unit; the standard RS485 unit powers the Nano C6 directly)
+**Recommended hardware:**
+- [M5Stack NanoC6](https://shop.m5stack.com/products/m5stack-nanoc6-dev-kit) (ESP32-C6)
+- [M5Stack Unit RS485](https://shop.m5stack.com/products/rs485-module) (provides power over Grove connector — no separate power supply needed)
+- [M5Stack Grove cable (2m)](https://shop.m5stack.com/products/4pin-buckled-grove-cable)
+- [ATX 4-pin Molex MicroFit connector cable](https://www.amazon.com/dp/B07Z6BJCVH) (needed to mate with the spa's `J34`/`J35` connector on some boards — see [docs/HARDWARE.md](docs/HARDWARE.md) for the connector pinout)
 
-**Interference note:** Bundling the ESP and RS485 adapter close together (e.g. taped up) causes significant interference — expect WiFi instability and high CRC error rates. Keeping them separated by the full cable length helps considerably. Mounting the NanoC6 a few feet away from the RS485 unit (which sits near the control box) is the recommended arrangement.
+**Interference note:** Bundling the ESP and RS485 adapter close together (e.g. taped up) causes significant interference — expect WiFi instability and high CRC error rates. Keeping them separated by the full cable length helps considerably. See [docs/HARDWARE.md](docs/HARDWARE.md) for more information.
 
-## What Changed
+<img src="docs/images/j34-connector-closeup.jpg" alt="Close-up of the J34 connector on a Balboa BP6013G2 mainboard" width="500">
 
-This is not a minor tweak. The codebase was substantially restructured and the command delivery model was replaced entirely.
-
-### Structural cleanup
-
-- Unified per-jet and per-light component classes into single parameterised classes — one `JetSwitch(index)` instead of `JetSwitch1`, `JetSwitch2`, etc., eliminating a large amount of boilerplate
-- Extracted a typed message layer for all wire protocol messages, replacing scattered raw byte construction
-- Shared temperature base class between the `climate` and `water_heater` platforms
-- Added a `number` platform for target temperature and a `rest_mode` switch
-- Removed the `CircularBuffer` dependency in favour of a flat array
-
-### Reliable command delivery
-
-The biggest functional change: commands are now queued with an expected outcome rather than fire-and-forget. Each toggle or set-temp command carries the spa state field it expects to change. After every status update from the spa, satisfied commands are pruned from the queue — unsatisfied ones are retried with a 5-second backoff.
-
-Properties of this approach:
-- The queue is insertion-sorted so the earliest-available command is always at the head
-- Per-component retry logic that previously lived in each switch/fan class is gone — the queue handles it centrally
-- Wire bytes for the head command are pre-serialised whenever the queue changes, so CTS response is a buffer write with no message construction on the hot path
-- Commands targeting a state that is already at the desired value are discarded immediately
-
-The retry behaviour has drastically improved jet on/off reliability. It still takes a few seconds sometimes, but almost always completes within 15 seconds.
-
-### Native Fahrenheit support
-
-This component supports `unit_of_measurement: °F` on the `climate` platform and temperature sensors, bypassing ESPHome/Home Assistant conversion so temperature steps are exact (no rounding artifacts from Celsius conversion). This requires ESPHome 2026.08 or newer, and likely 2026.09 for Home Assistant.
-
-- **Home Assistant** — [home-assistant/core#168747](https://github.com/home-assistant/core/pull/168747): adds native `unit_of_measurement` support to the ESPHome climate and water heater integrations, eliminating floating-point errors from unit conversions. Currently open, awaiting code owner approval.
+*The J34 connector on a Balboa BP6013G2 mainboard. Photo: [koffienl, r/hottub](https://old.reddit.com/r/hottub/comments/1rbvkhu/finally_made_my_tub_smart_full_technical_guide/). See [docs/HARDWARE.md](docs/HARDWARE.md) for the full connector reference.*
 
 
 ## Sample Config
@@ -125,7 +99,7 @@ climate:
   - platform: balboa_spa
     balboa_spa_id: spa
     name: "Spa Thermostat"
-    # unit_of_measurement: °F  # requires pending upstream PRs — see Native Fahrenheit Support
+    unit_of_measurement: °F
 
 number:
   - platform: balboa_spa
@@ -320,7 +294,7 @@ Enables/disables the secondary filter cycle. Turning ON requires filter 2 start 
 
 | Key | Description |
 |-----|-------------|
-| `current_temp` | Current water temperature. Accepts `unit_of_measurement: °F` — see [Native Fahrenheit support](#native-fahrenheit-support) |
+| `current_temp` | Current water temperature. Accepts `unit_of_measurement: °F` — see [Native Fahrenheit support](docs/ARCHITECTURE.md#native-fahrenheit-support) |
 | `fault_code` | Raw fault code |
 | `fault_total_entries` | Entries in fault log |
 | `fault_current_entry` | Current entry index (0–23) |
@@ -388,7 +362,7 @@ The `reminder` text sensor reports maintenance reminders from the spa: `None`, `
 
 ### CRC Errors
 
-CRC errors are common due to electrical interference from heaters and pumps. Physical separation of the ESP and RS485 adapter helps significantly. To silence CRC errors in logs while keeping other debug output:
+CRC errors are common due to electrical interference from heaters and pumps. Physical separation of the ESP and RS485 adapter helps significantly. If separation alone doesn't resolve it, a missing RS-485 termination resistor may be a contributing factor — see [docs/HARDWARE.md](docs/HARDWARE.md#rs-485-termination-eol-resistor). To silence CRC errors in logs while keeping other debug output:
 
 ```yaml
 logger:
@@ -422,7 +396,7 @@ Not needed for classic ESP32 boards, ESP-IDF framework, or ESP8266.
 ## Screenshots
 
 ### ESP WebUI
-![image](https://github.com/user-attachments/assets/af602be2-da9e-4880-8fb8-e7f7f9122977)
+![ESP WebUI](docs/images/esp-webui-screenshot.png)
 
 ### Home Assistant UI
-![image](https://github.com/user-attachments/assets/a37a7e08-94b2-4231-83ca-0ffc4646fbfa)
+![Home Assistant UI](docs/images/home-assistant-ui-screenshot.png)
