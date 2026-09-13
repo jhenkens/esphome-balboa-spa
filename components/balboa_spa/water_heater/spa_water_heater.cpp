@@ -31,7 +31,7 @@ namespace esphome
             traits_.set_min_temperature(range_min());
             traits_.set_max_temperature(range_max());
             traits_.set_target_temperature_step(temp_step());
-            traits_.set_temperature_unit(is_fahrenheit() ? esphome::TemperatureUnit::FAHRENHEIT : esphome::TemperatureUnit::CELSIUS);
+            //traits_.set_temperature_unit(is_fahrenheit() ? esphome::TemperatureUnit::FAHRENHEIT : esphome::TemperatureUnit::CELSIUS);
         }
 
         void BalboaSpaWaterHeater::update()
