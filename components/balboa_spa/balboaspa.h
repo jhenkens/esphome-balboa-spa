@@ -121,6 +121,15 @@ namespace esphome
             uint8_t last_settings_crc = 0x00;
             uint8_t last_filter_crc = 0x00;
             uint8_t last_fault_crc = 0x00;
+            uint8_t last_status_message_[sizeof(StatusMessage)] = {};
+            bool has_last_status_message_ = false;
+            uint8_t last_settings_message_[sizeof(ControlConfig2Response)] = {};
+            bool has_last_settings_message_ = false;
+            uint8_t last_filter_message_[sizeof(FilterStatusMessage)] = {};
+            bool has_last_filter_message_ = false;
+            uint8_t last_fault_payload_[BUFFER_LENGTH] = {};
+            size_t last_fault_length_ = 0;
+            bool has_last_fault_message_ = false;
             // Command queue — sorted linear array, insertion-sorted by available_at
             enum class CmdType : uint8_t
             {

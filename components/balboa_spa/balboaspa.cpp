@@ -90,14 +90,14 @@ namespace esphome
                 }
             }
 
-            ESP_LOGV(TAG, "Checking serial for incoming data...");
+            //ESP_LOGV(TAG, "Checking serial for incoming data...");
             while (true)
             {
                 if(!read_serial()){
                     break;
                 }
             }
-            ESP_LOGV(TAG, "Finished processing serial data. Updating sensors if needed...");
+            //ESP_LOGV(TAG, "Finished processing serial data. Updating sensors if needed...");
 
             if (used_remembered_client_id_for_session_ && client_id != 0 && !client_id_probe_pending_ &&
                 last_status_received_ms_ != 0 && millis() - client_id_set_at_ms_ >= 60000)
@@ -489,6 +489,12 @@ namespace esphome
         {
             if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
             {
+                if (spaState.hour == hour && spaState.minutes == minute)
+                {
+                    ESP_LOGV(TAG, "Skipping redundant time update to %02d:%02d", hour, minute);
+                    return;
+                }
+
                 target_hour = hour;
                 target_minute = minute;
                 PendingCmd time_cmd;
@@ -775,28 +781,26 @@ namespace esphome
                         break;
                     }
                     case msFilterConfig: {
-                        if(last_filter_crc != found_crc){
                         if (!check_msg_length<FilterStatusMessage>(input_buffer, "FilterStatusMessage")) break;
-                            const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
-                            ESP_LOGV(TAG, "FilterStatusMessage");
+                        const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
+                        ESP_LOGV(TAG, "FilterStatusMessage");
+                        if (!has_last_filter_message_ || memcmp(last_filter_message_, msg, sizeof(FilterStatusMessage)) != 0)
                             decodeFilterSettings(msg);
-                        }
                         break;
                     }
                     case msControlConfig2: {
                         if (!check_msg_length<ControlConfig2Response>(input_buffer, "ControlConfig2Response")) break;
                         ESP_LOGV(TAG, "ControlConfig2Response");
-                        if(last_settings_crc != found_crc){
-                            const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
+                        const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
+                        if (!has_last_settings_message_ || memcmp(last_settings_message_, msg, sizeof(ControlConfig2Response)) != 0)
                             decodeSettings(msg);
-                        }
                         break;
                     }
                     default:
                         if(found_msg_type == 0x06){ 
                             send_message();
                         }
-                        else if (found_msg_type == 0x28 && last_fault_crc != found_crc)
+                        else if (found_msg_type == 0x28 && (!has_last_fault_message_ || memcmp(last_fault_payload_, input_buffer, length) != 0))
                         {
                             decodeFault();
                         } else{
@@ -810,10 +814,8 @@ namespace esphome
                     case msStatus: {
                         if (!check_msg_length<StatusMessage>(input_buffer, "StatusMessage")) break;
                         const StatusMessage *msg = reinterpret_cast<const StatusMessage *>(input_buffer);
-                        if(last_state_crc != msg->_suffix._check){
-                            ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
-                            decodeState(msg);
-                        }
+                        ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
+                        decodeState(msg);
                         break;
                     }
                     case msSetTempRange: {
@@ -845,7 +847,7 @@ namespace esphome
             uint32_t now_cts = millis();
             if (last_cts_time > 0)
             {
-                ESP_LOGV(TAG, "CTS interval: %u ms", now_cts - last_cts_time);
+                ESP_LOGV(TAG, "CTS interval: %lu ms", now_cts - last_cts_time);
             }
             last_cts_time = now_cts;
 
@@ -975,11 +977,19 @@ namespace esphome
                      spaConfig.circ, spaConfig.blower, spaConfig.mister,
                      spaConfig.aux1, spaConfig.aux2);
             config_request_status = 2;
+            memcpy(last_settings_message_, msg, sizeof(ControlConfig2Response));
+            has_last_settings_message_ = true;
             last_settings_crc = msg->_suffix._check;
         }
 
         void BalboaSpa::decodeState(const StatusMessage *msg)
         {
+            if (has_last_status_message_ && memcmp(last_status_message_, msg, sizeof(StatusMessage)) == 0)
+            {
+                ESP_LOGV(TAG, "StatusMessage unchanged; skipping decode");
+                return;
+            }
+
             TEMP_SCALE new_temp_scale = static_cast<TEMP_SCALE>(msg->_tempScaleCelsius);
             CLOCK_MODE new_clock_mode_24hr = static_cast<CLOCK_MODE>(msg->_24hrTime);
             if(new_temp_scale != spa_temp_scale || new_clock_mode_24hr != clock_mode_24hr){
@@ -1005,6 +1015,8 @@ namespace esphome
             spaState = newState;
             prune_and_rebuild();
 
+            memcpy(last_status_message_, msg, sizeof(StatusMessage));
+            has_last_status_message_ = true;
             last_state_crc = msg->_suffix._check;
             last_status_received_ms_ = millis();
         }
@@ -1044,6 +1056,8 @@ namespace esphome
                 filter_listener(&spaFilterSettings);
             }
 
+            memcpy(last_filter_message_, msg, sizeof(FilterStatusMessage));
+            has_last_filter_message_ = true;
             last_filter_crc = input_buffer[input_buffer[0] - 1];
         }
 
@@ -1140,6 +1154,9 @@ namespace esphome
                 listener(&spaFaultLog);
             }
 
+            last_fault_length_ = input_buffer[0];
+            memcpy(last_fault_payload_, input_buffer, last_fault_length_);
+            has_last_fault_message_ = true;
             last_fault_crc = input_buffer[input_buffer[0] - 1];
         }
 

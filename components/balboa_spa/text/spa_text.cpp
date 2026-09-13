@@ -103,6 +103,12 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
+                const SpaState *state = this->spa_->get_current_state();
+                if (state != nullptr && state->hour == hour && state->minutes == minute)
+                {
+                    ESP_LOGD(TAG, "Ignoring unchanged spa time value: %s", value.c_str());
+                    return;
+                }
                 this->spa_->set_time(hour, minute);
             }
             else
