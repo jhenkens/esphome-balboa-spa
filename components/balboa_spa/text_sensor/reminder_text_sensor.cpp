@@ -31,6 +31,9 @@ namespace esphome
                 case ReminderType::PRIMING:
                     reminder_message = "Priming";
                     break;
+                case ReminderType::TEST_GFCI:
+                    reminder_message = "Test GFCI";
+                    break;
                 case ReminderType::CLEAN_FILTER:
                     reminder_message = "Clean Filter";
                     break;

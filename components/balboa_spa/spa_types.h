@@ -69,6 +69,7 @@ namespace esphome
         {
             NONE = 0x00,
             PRIMING = 0x01,
+            TEST_GFCI = 0x02,
             CLEAN_FILTER = 0x04,
             CHECK_SANITIZER = 0x09,
             CHECK_PH = 0x0A,
