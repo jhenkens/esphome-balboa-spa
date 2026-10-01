@@ -734,7 +734,7 @@ namespace esphome
                     // Sanity check: total packet size
                     if (received_length > BUFFER_LENGTH - 1)
                     {
-                        ESP_LOGV(TAG, "Length byte %d would exceed buffer capacity — discarding", received_length);
+                        ESP_LOGV(TAG, "Length byte %zu would exceed buffer capacity — discarding", received_length);
                         input_failed = true;
                         return true;
                     }
@@ -743,7 +743,7 @@ namespace esphome
                     // reading stale bytes for the message type.
                     if (received_length < 5)
                     {
-                        ESP_LOGV(TAG, "Invalid length byte %d — discarding", received_length);
+                        ESP_LOGV(TAG, "Invalid length byte %zu — discarding", received_length);
                         input_failed = true;
                         return true;
                     }
@@ -767,7 +767,7 @@ namespace esphome
             if (!read_array(&input_buffer[1], length - 1))
             {
                 // Failed to read the expected number of bytes, mark as failed and wait for the next packet.
-                ESP_LOGV(TAG, "Failed to read expected bytes. Expected: %d", length - 1);
+                ESP_LOGV(TAG, "Failed to read expected bytes. Expected: %zu", length - 1);
                 input_failed = true;
                 return true;
             }
