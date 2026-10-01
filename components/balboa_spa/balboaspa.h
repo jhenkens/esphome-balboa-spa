@@ -171,8 +171,11 @@ namespace esphome
             };
             static const uint8_t CMD_QUEUE_SIZE = 8;
             static constexpr uint32_t RETRY_BACKOFF_MS = 5000;
-            static constexpr uint32_t REQUEST_TIMEOUT_MS = 10000; // how long to wait for a config/fault log/filter response
-            static constexpr uint8_t REQUEST_MAX_RETRIES = 3;     // re-requests before a request is abandoned
+            static constexpr uint32_t REQUEST_TIMEOUT_MS = 10000;  // how long to wait for a config/fault log/filter response
+            static constexpr uint8_t REQUEST_MAX_RETRIES = 3;      // re-requests before a request is abandoned
+            static constexpr float TEMP_JUMP_THRESHOLD_C = 5.0f;   // a larger change in current temperature is held back
+            static constexpr float TEMP_SETTLE_TOLERANCE_C = 1.0f; // a held-back reading must stay within this to be accepted
+            static constexpr uint32_t TEMP_SETTLE_TIME_MS = 60000; // how long a held-back reading must persist
             static constexpr uint8_t PENDING_MSG_BUF_SIZE = 24;
             PendingCmd cmd_queue_[CMD_QUEUE_SIZE];
             uint8_t cmd_count_ = 0;
@@ -214,6 +217,9 @@ namespace esphome
             uint8_t client_id_probe_expected_light_state_ = 0;
             ESPPreferenceObject client_id_pref_;
             uint32_t last_received_time = 0;
+            float current_temp_baseline_c_ = NAN;     // last accepted current temperature
+            float pending_current_temp_c_ = NAN;      // sudden jump waiting to settle
+            uint32_t pending_current_temp_start_ = 0; // millis() when the pending jump was first seen
             uint32_t last_status_received_ms_ = 0;
             uint32_t last_dead_log_time = 0;
             uint32_t last_cts_time = 0;
@@ -266,6 +272,7 @@ namespace esphome
             void decodeState(const StatusMessage *msg);
             void decodeFilterSettings(const FilterStatusMessage *msg);
             void decodeFault();
+            bool accept_current_temp(float temp_c);
             void check_request_timeout(char &status, uint32_t requested_at, uint8_t &retries, const char *name);
 
             template <size_t N>

@@ -77,6 +77,9 @@ namespace esphome
                     last_dead_log_time = now;
                 }
                 status_set_error(LOG_STR("No Communication with Balboa Mainboard!"));
+                // Take the first reading after reconnecting as-is
+                current_temp_baseline_c_ = NAN;
+                pending_current_temp_c_ = NAN;
                 if (client_id != 0)
                 {
                     client_id = 0;
@@ -1090,6 +1093,47 @@ namespace esphome
                      spaConfig.aux1, spaConfig.aux2);
         }
 
+        bool BalboaSpa::accept_current_temp(float temp_c)
+        {
+            // Spike filter for the current temperature, in Celsius so it does not
+            // depend on the spa's scale.
+            //
+            // Some spas report single out-of-line readings (heater or pump start-up
+            // noise). A jump of more than TEMP_JUMP_THRESHOLD_C from the last
+            // accepted reading is only accepted once it has held within
+            // TEMP_SETTLE_TOLERANCE_C for TEMP_SETTLE_TIME_MS, e.g. after refilling
+            // with cold water. Status messages are only decoded when they change,
+            // so in practice that can take until the next clock minute after the
+            // settle time is up.
+            if (std::isnan(current_temp_baseline_c_) ||
+                std::fabs(temp_c - current_temp_baseline_c_) <= TEMP_JUMP_THRESHOLD_C)
+            {
+                current_temp_baseline_c_ = temp_c;
+                pending_current_temp_c_ = NAN;
+                return true;
+            }
+
+            uint32_t now = millis();
+            if (std::isnan(pending_current_temp_c_) ||
+                std::fabs(temp_c - pending_current_temp_c_) > TEMP_SETTLE_TOLERANCE_C)
+            {
+                ESP_LOGD(TAG, "Spa/temperature/current: jump to %.2f C from %.2f C, waiting for it to settle",
+                         temp_c, current_temp_baseline_c_);
+                pending_current_temp_c_ = temp_c;
+                pending_current_temp_start_ = now;
+                return false;
+            }
+
+            if (now - pending_current_temp_start_ < TEMP_SETTLE_TIME_MS)
+                return false;
+
+            ESP_LOGD(TAG, "Spa/temperature/current: %.2f C held for %u s, accepting as new baseline",
+                     temp_c, (unsigned)(TEMP_SETTLE_TIME_MS / 1000));
+            current_temp_baseline_c_ = temp_c;
+            pending_current_temp_c_ = NAN;
+            return true;
+        }
+
         void BalboaSpa::decodeState(const StatusMessage *msg)
         {
             last_status_received_ms_ = millis();
@@ -1109,6 +1153,13 @@ namespace esphome
                 clock_mode_24hr = new_clock_mode_24hr;
             }
             SpaState newState(*msg, spa_temp_scale);
+
+            if (!std::isnan(newState.current_temp))
+            {
+                float temp_c = (spa_temp_scale == TEMP_SCALE::F) ? TEMP_F_TO_C(newState.current_temp) : newState.current_temp;
+                if (!accept_current_temp(temp_c))
+                    newState.current_temp = spaState.current_temp; // sudden jump: keep the last accepted reading
+            }
 
             ESP_LOGI(TAG, "Spa/status received: current_temp=%f set_temp=%f rest_mode=%d highrange=%d",
                      newState.current_temp, newState.target_temp, (int)newState.rest_mode, newState.highrange & 0x1);
