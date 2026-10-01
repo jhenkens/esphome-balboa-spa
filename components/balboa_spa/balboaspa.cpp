@@ -1037,6 +1037,10 @@ namespace esphome
 
         void BalboaSpa::decodeSettings(const ControlConfig2Response *msg)
         {
+            // Mark the request answered before the duplicate check: an unchanged
+            // response is still a response.
+            config_request_status = 2;
+
             if (!update_if_changed(last_settings_message_, has_last_settings_message_, msg))
             {
                 ESP_LOGV(TAG, "ControlConfig2Response unchanged; skipping decode");
@@ -1050,7 +1054,6 @@ namespace esphome
                      spaConfig.light1, spaConfig.light2,
                      spaConfig.circ, spaConfig.blower, spaConfig.mister,
                      spaConfig.aux1, spaConfig.aux2);
-            config_request_status = 2;
         }
 
         void BalboaSpa::decodeState(const StatusMessage *msg)
@@ -1090,6 +1093,12 @@ namespace esphome
 
         void BalboaSpa::decodeFilterSettings(const FilterStatusMessage *msg)
         {
+            // Mark the request answered before the duplicate check: an unchanged
+            // response is still a response, and the periodic refresh timer only
+            // runs once the status is back at 2.
+            filtersettings_request_status = 2;
+            filtersettings_update_timer = 0;
+
             if (!update_if_changed(last_filter_message_, has_last_filter_message_, msg))
             {
                 ESP_LOGV(TAG, "FilterStatusMessage unchanged; skipping decode");
@@ -1120,8 +1129,6 @@ namespace esphome
             std::snprintf(filter_payload, payload_length + 1, format_string, spaFilterSettings.filter2_hour, spaFilterSettings.filter2_minute, spaFilterSettings.filter2_duration_hour, spaFilterSettings.filter2_duration_minute);
             ESP_LOGD(TAG, "Spa/filter2/state: %s", filter_payload);
 
-            filtersettings_request_status = 2;
-            filtersettings_update_timer = 0; // Reset timer after successful decode
             prune_and_rebuild();
 
             for (const auto &filter_listener : this->filter_listeners_)
@@ -1135,6 +1142,11 @@ namespace esphome
             // Accesses up to input_buffer[9] — require at least 10 bytes.
             if (!check_fault_length(input_buffer))
                 return;
+
+            // Mark the request answered before the duplicate check: an unchanged
+            // response is still a response, and the filter settings request waits
+            // on this status.
+            faultlog_request_status = 2;
 
             if (!update_if_changed(last_fault_payload_, last_fault_length_, has_last_fault_message_, input_buffer, input_buffer[0]))
             {
@@ -1218,8 +1230,6 @@ namespace esphome
             ESP_LOGD(TAG, "Spa/fault/DaysAgo: %d", spaFaultLog.days_ago);
             ESP_LOGD(TAG, "Spa/fault/Hours: %d", spaFaultLog.hour);
             ESP_LOGD(TAG, "Spa/fault/Minutes: %d", spaFaultLog.minutes);
-            faultlog_request_status = 2;
-            // ESP_LOGD(TAG, "Spa/debug/faultlog_request_status: have the faultlog, #2");
 
             // Notify fault log listeners
             for (const auto &listener : this->fault_log_listeners_)
