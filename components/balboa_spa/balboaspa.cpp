@@ -979,7 +979,6 @@ namespace esphome
             config_request_status = 2;
             memcpy(last_settings_message_, msg, sizeof(ControlConfig2Response));
             has_last_settings_message_ = true;
-            last_settings_crc = msg->_suffix._check;
         }
 
         void BalboaSpa::decodeState(const StatusMessage *msg)
@@ -1017,7 +1016,6 @@ namespace esphome
 
             memcpy(last_status_message_, msg, sizeof(StatusMessage));
             has_last_status_message_ = true;
-            last_state_crc = msg->_suffix._check;
             last_status_received_ms_ = millis();
         }
 
@@ -1058,7 +1056,6 @@ namespace esphome
 
             memcpy(last_filter_message_, msg, sizeof(FilterStatusMessage));
             has_last_filter_message_ = true;
-            last_filter_crc = input_buffer[input_buffer[0] - 1];
         }
 
         void BalboaSpa::decodeFault()
@@ -1157,7 +1154,6 @@ namespace esphome
             last_fault_length_ = input_buffer[0];
             memcpy(last_fault_payload_, input_buffer, last_fault_length_);
             has_last_fault_message_ = true;
-            last_fault_crc = input_buffer[input_buffer[0] - 1];
         }
 
         bool BalboaSpa::is_communicating()

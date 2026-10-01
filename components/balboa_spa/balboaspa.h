@@ -117,10 +117,6 @@ namespace esphome
             }
             uint8_t output_buffer[BUFFER_LENGTH];
             uint8_t received_byte, loop_index, temp_index;
-            uint8_t last_state_crc = 0x00;
-            uint8_t last_settings_crc = 0x00;
-            uint8_t last_filter_crc = 0x00;
-            uint8_t last_fault_crc = 0x00;
             uint8_t last_status_message_[sizeof(StatusMessage)] = {};
             bool has_last_status_message_ = false;
             uint8_t last_settings_message_[sizeof(ControlConfig2Response)] = {};
