@@ -20,7 +20,7 @@ namespace esphome
             JetFanBase(const char *tag, const char *jet_name)
                 : JetToggleComponentBase(tag, jet_name) {};
 
-            void update();  // sync ESPHome ← spa
+            void update(); // sync ESPHome ← spa
             void set_parent(BalboaSpa *parent);
 
             fan::FanTraits get_traits() override;

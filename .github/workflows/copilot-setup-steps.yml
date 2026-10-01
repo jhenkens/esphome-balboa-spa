@@ -30,11 +30,11 @@ jobs:
   copilot-setup-steps:
     name: ESPHome Component Validation
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
-      
+
       # Validate ESP32 Arduino configuration
       - name: Validate ESP32 Arduino Configuration
         if: ${{ inputs.validate_all == true || inputs.esp32_only == true }}
@@ -42,15 +42,15 @@ jobs:
         with:
           yaml-file: esp32_test_component.yaml
           version: ${{ env.ESPHOME_VERSION }}
-      
-      # Validate ESP32 IDF configuration  
+
+      # Validate ESP32 IDF configuration
       - name: Validate ESP32 IDF Configuration
         if: ${{ inputs.validate_all == true || inputs.esp32_only == true }}
         uses: esphome/build-action@v7.2.0
         with:
           yaml-file: esp32idf_test_component.yaml
           version: ${{ env.ESPHOME_VERSION }}
-      
+
       # Validate ESP8266 configuration
       - name: Validate ESP8266 Configuration
         if: ${{ inputs.validate_all == true || inputs.esp8266_only == true }}
@@ -58,30 +58,30 @@ jobs:
         with:
           yaml-file: esp8266_test_component.yaml
           version: ${{ env.ESPHOME_VERSION }}
-      
+
       # Component analysis
       - name: Analyze Component Structure
         run: |
           echo "## ESPHome Balboa Spa Component Analysis" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### Build Configuration:" >> $GITHUB_STEP_SUMMARY
           echo "- **ESPHome Version**: ${{ env.ESPHOME_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Validate All**: ${{ inputs.validate_all }}" >> $GITHUB_STEP_SUMMARY
           echo "- **ESP32 Only**: ${{ inputs.esp32_only }}" >> $GITHUB_STEP_SUMMARY
           echo "- **ESP8266 Only**: ${{ inputs.esp8266_only }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### Component Files:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           find components/balboa_spa -name "*.cpp" -o -name "*.h" -o -name "*.py" | sort >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### Configuration Files:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           ls -1 *.yaml >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "✅ **Component validation completed successfully!**" >> $GITHUB_STEP_SUMMARY

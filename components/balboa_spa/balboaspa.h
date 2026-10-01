@@ -30,19 +30,19 @@ namespace esphome
         // Used as the dedup key and for pruning satisfied commands after state updates.
         enum class ExpectedField : uint8_t
         {
-            NONE        = 0,  // fire-and-forget, never retried
-            JET_0       = 1,
-            JET_1       = 2,
-            JET_2       = 3,
-            JET_3       = 4,
-            BLOWER      = 5,
-            LIGHT_0     = 6,
-            LIGHT_1     = 7,
-            HIGH_RANGE   = 8,
-            REST_MODE   = 9,
+            NONE = 0, // fire-and-forget, never retried
+            JET_0 = 1,
+            JET_1 = 2,
+            JET_2 = 3,
+            JET_3 = 4,
+            BLOWER = 5,
+            LIGHT_0 = 6,
+            LIGHT_1 = 7,
+            HIGH_RANGE = 8,
+            REST_MODE = 9,
             TARGET_TEMP = 10,
-            CLOCK_24H   = 11,
-            FILTER      = 12,
+            CLOCK_24H = 11,
+            FILTER = 12,
         };
 
         class BalboaSpa : public uart::UARTDevice, public PollingComponent
@@ -68,8 +68,8 @@ namespace esphome
             void set_filter2_start_time(uint8_t hour, uint8_t minute);
             void set_filter2_duration(uint8_t hour, uint8_t minute);
             void disable_filter2();
-            void toggle_light(uint8_t index); // index 1-2
-            void toggle_jet(uint8_t index, uint8_t expected_state, uint8_t max_retries = 5);  // index 1-4
+            void toggle_light(uint8_t index);                                                // index 1-2
+            void toggle_jet(uint8_t index, uint8_t expected_state, uint8_t max_retries = 5); // index 1-4
             void toggle_blower(uint8_t expected_state, uint8_t max_retries = 5);
             void set_highrange(bool high);
             void clear_reminder();
@@ -139,11 +139,11 @@ namespace esphome
             {
                 CmdType type;
                 ExpectedField target_field = ExpectedField::NONE; // dedup key + expected-state selector
-                uint8_t expected_toggle_value = 0;   // value expected in spa state after command succeeds
-                uint8_t retry_count = 0;      // number of times sent so far
-                uint8_t max_retries = 0;      // 0 = fire-and-forget; give up when retry_count >= max_retries
-                uint32_t queued_at = 0;       // when first created
-                uint32_t available_at = 0;    // earliest millis() at which this may be sent
+                uint8_t expected_toggle_value = 0;                // value expected in spa state after command succeeds
+                uint8_t retry_count = 0;                          // number of times sent so far
+                uint8_t max_retries = 0;                          // 0 = fire-and-forget; give up when retry_count >= max_retries
+                uint32_t queued_at = 0;                           // when first created
+                uint32_t available_at = 0;                        // earliest millis() at which this may be sent
                 union
                 {
                     uint8_t toggle_code;
@@ -175,7 +175,7 @@ namespace esphome
             uint8_t cmd_count_ = 0;
             uint8_t pending_msg_buf_[PENDING_MSG_BUF_SIZE];
             uint8_t pending_msg_len_ = 0;
-            PendingCmd pending_cmd_ = {};      // command used to build pending_msg_buf_
+            PendingCmd pending_cmd_ = {}; // command used to build pending_msg_buf_
             void insert_cmd(PendingCmd cmd);
             void remove_at(uint8_t i);
             void rebuild_pending_msg();
@@ -199,9 +199,9 @@ namespace esphome
             uint8_t target_filter2_duration_minute = 0x00;
             bool target_filter2_enable = false;
             uint8_t client_id = 0x00;
-            uint8_t client_id_override = 0x00;      // set via YAML client_id:, never cleared
+            uint8_t client_id_override = 0x00; // set via YAML client_id:, never cleared
             bool use_client_id_override = false;
-            uint8_t remembered_client_id_ = 0x00;   // loaded from NVS, cleared on reconnect
+            uint8_t remembered_client_id_ = 0x00; // loaded from NVS, cleared on reconnect
             bool use_remembered_client_id_ = false;
             bool remember_client_id_ = true;
             bool used_remembered_client_id_for_session_ = false;

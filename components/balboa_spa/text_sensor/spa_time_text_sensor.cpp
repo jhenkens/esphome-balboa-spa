@@ -8,7 +8,8 @@ namespace esphome
         void SpaTimeTextSensor::set_parent(BalboaSpa *parent)
         {
             spa_ = parent;
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void SpaTimeTextSensor::update()

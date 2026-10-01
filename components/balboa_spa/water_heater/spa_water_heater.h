@@ -6,33 +6,33 @@
 
 namespace esphome
 {
-  namespace balboa_spa
-  {
-
-    // Modes:
-    //   OFF         → rest_mode=REST (sleep/rest, energy-saving standby)
-    //   ECO         → rest_mode=READY, highrange=0 (ready, standard temp range)
-    //   ELECTRIC → rest_mode=READY, highrange=1 (ready, high temp range)
-
-    class BalboaSpaWaterHeater : public water_heater::WaterHeater, public SpaTemperatureBase
+    namespace balboa_spa
     {
-    public:
-      BalboaSpaWaterHeater() {};
 
-      void update() override;
-      void set_parent(BalboaSpa *parent);
-      void update_traits() override;
+        // Modes:
+        //   OFF         → rest_mode=REST (sleep/rest, energy-saving standby)
+        //   ECO         → rest_mode=READY, highrange=0 (ready, standard temp range)
+        //   ELECTRIC → rest_mode=READY, highrange=1 (ready, high temp range)
 
-      water_heater::WaterHeaterCallInternal make_call() override
-      {
-        return water_heater::WaterHeaterCallInternal(this);
-      }
+        class BalboaSpaWaterHeater : public water_heater::WaterHeater, public SpaTemperatureBase
+        {
+        public:
+            BalboaSpaWaterHeater() {};
 
-    protected:
-      void control(const water_heater::WaterHeaterCall &call) override;
-      water_heater::WaterHeaterTraits traits() override;
-      water_heater::WaterHeaterTraits traits_ = water_heater::WaterHeaterTraits();
-    };
+            void update() override;
+            void set_parent(BalboaSpa *parent);
+            void update_traits() override;
 
-  } // namespace balboa_spa
+            water_heater::WaterHeaterCallInternal make_call() override
+            {
+                return water_heater::WaterHeaterCallInternal(this);
+            }
+
+        protected:
+            void control(const water_heater::WaterHeaterCall &call) override;
+            water_heater::WaterHeaterTraits traits() override;
+            water_heater::WaterHeaterTraits traits_ = water_heater::WaterHeaterTraits();
+        };
+
+    } // namespace balboa_spa
 } // namespace esphome

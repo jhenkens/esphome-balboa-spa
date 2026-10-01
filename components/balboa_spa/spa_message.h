@@ -37,10 +37,10 @@ namespace esphome
             msStatus = MESSAGE_ID(0xff, 0xaf, 0x13),
             msSetTempRange = MESSAGE_ID(0xff, 0xaf, 0x26),
             msConfigResponse = MESSAGE_ID(0xff, 0xbf, 0x94), // actually targeted by client_id, but ignored for matching
-            msFilterConfig = MESSAGE_ID(0xff, 0xbf, 0x23), // actually targeted by client_id, but ignored for matching
-            msControlConfig = MESSAGE_ID(0xff, 0xbf, 0x24), // actually targeted by client_id, but ignored for matching
+            msFilterConfig = MESSAGE_ID(0xff, 0xbf, 0x23),   // actually targeted by client_id, but ignored for matching
+            msControlConfig = MESSAGE_ID(0xff, 0xbf, 0x24),  // actually targeted by client_id, but ignored for matching
             msControlConfig2 = MESSAGE_ID(0xff, 0xbf, 0x2e), // actually targeted by client_id, but ignored for matching
-            unknownMessage = MESSAGE_ID(0xff, 0xbf, 0x06), // actually targeted by client_id, but ignored for matching
+            unknownMessage = MESSAGE_ID(0xff, 0xbf, 0x06),   // actually targeted by client_id, but ignored for matching
         };
 
         //  Message Id's for commands send to the hot-tub
@@ -48,12 +48,12 @@ namespace esphome
         {
             msConfigRequest = MESSAGE_ID(0x0a, 0xbf, 0x04),
             msControlConfigRequest = MESSAGE_ID(0x0a, 0xbf, 0x22),
-            msFaultLogRequest = MESSAGE_ID(0x0a, 0xbf, 0x22),      // same type, different payload
-            msFilterConfigRequest = MESSAGE_ID(0x0a, 0xbf, 0x22),  // same type, different payload
+            msFaultLogRequest = MESSAGE_ID(0x0a, 0xbf, 0x22),     // same type, different payload
+            msFilterConfigRequest = MESSAGE_ID(0x0a, 0xbf, 0x22), // same type, different payload
             msToggleItemRequest = MESSAGE_ID(0x0a, 0xbf, 0x11),
             msSetTempRequest = MESSAGE_ID(0x0a, 0xbf, 0x20),
             msSetTempScaleRequest = MESSAGE_ID(0x0a, 0xbf, 0x27),
-            msSetPreferenceRequest = MESSAGE_ID(0x0a, 0xbf, 0x27),  // same type, different payload bytes
+            msSetPreferenceRequest = MESSAGE_ID(0x0a, 0xbf, 0x27), // same type, different payload bytes
             msSetTimeRequest = MESSAGE_ID(0x0a, 0xbf, 0x21),
             msSetFilterConfigRequest = MESSAGE_ID(0x0a, 0xbf, 0x23),
             msNothingToSend = MESSAGE_ID(0x0a, 0xbf, 0x07),
@@ -118,7 +118,7 @@ namespace esphome
         } __attribute__((packed));
 
         struct StatusMessage : public MessageBaseIncoming
-        {                               // uint8_t #
+        {                                  // uint8_t #
             uint8_t _r1;                   // 00
             ReminderType _reminder;        // 01
             uint8_t _currentTemp;          // 02
@@ -156,7 +156,7 @@ namespace esphome
             uint8_t _r7a : 1;              // both 18 & 19, bit 2 seem related to time not
             uint8_t _timeUnset : 1;        // yet set.
             uint8_t : 0;
-            CleanupCycle _cleanupCycle : 4;     // 19
+            CleanupCycle _cleanupCycle : 4; // 19
             uint8_t : 0;
             uint8_t _setTemp; // 20
             uint8_t _r8 : 2;  // 21
@@ -169,7 +169,7 @@ namespace esphome
         } __attribute__((packed));
 
         struct FilterStatusMessage : public MessageBaseIncoming
-        {                                // uint8_t
+        {                                   // uint8_t
             uint8_t filter1StartHour;       // 00
             uint8_t filter1StartMinute;     // 01
             uint8_t filter1DurationHours;   // 02
@@ -184,42 +184,42 @@ namespace esphome
         } __attribute__((packed));
 
         struct ControlConfigResponse : public MessageBaseIncoming
-        {                        // uint8_t
-            uint8_t _version[3];    // 00, 01, 02
-            uint8_t _r1;            // 03
-            uint8_t _name[8];       // 04->11
-            uint8_t _currentSetup;  // 12
-            uint32_t _signature; // 13->16
-            uint8_t _r2[4];         // 17->20
+        {                          // uint8_t
+            uint8_t _version[3];   // 00, 01, 02
+            uint8_t _r1;           // 03
+            uint8_t _name[8];      // 04->11
+            uint8_t _currentSetup; // 12
+            uint32_t _signature;   // 13->16
+            uint8_t _r2[4];        // 17->20
 
             MessageSuffix _sufffix;
         } __attribute__((packed));
 
         struct ControlConfig2Response : public MessageBaseIncoming
-        {                            // payload byte #
-            uint8_t pump1  : 2;     // 00
-            uint8_t pump2  : 2;     //
-            uint8_t pump3  : 2;     //
-            uint8_t pump4  : 2;     //
-            uint8_t : 0;            //
-            uint8_t pump5  : 2;     // 01
-            uint8_t _r1    : 4;     //
-            uint8_t pump6  : 2;     //
-            uint8_t : 0;            //
-            uint8_t light1  : 2;    // 02
-            uint8_t light2  : 2;    //
-            uint8_t _r2     : 4;    //
-            uint8_t : 0;            //
-            uint8_t blower  : 2;    // 03
-            uint8_t _r3     : 5;    //
-            uint8_t circ    : 1;    // bit 7
-            uint8_t : 0;            //
-            uint8_t aux1    : 1;    // 04
-            uint8_t aux2    : 1;    //
-            uint8_t _r4     : 2;    //
-            uint8_t mister  : 2;    //
-            uint8_t _r5     : 2;    //
-            uint8_t : 0;            //
+        {                       // payload byte #
+            uint8_t pump1 : 2;  // 00
+            uint8_t pump2 : 2;  //
+            uint8_t pump3 : 2;  //
+            uint8_t pump4 : 2;  //
+            uint8_t : 0;        //
+            uint8_t pump5 : 2;  // 01
+            uint8_t _r1 : 4;    //
+            uint8_t pump6 : 2;  //
+            uint8_t : 0;        //
+            uint8_t light1 : 2; // 02
+            uint8_t light2 : 2; //
+            uint8_t _r2 : 4;    //
+            uint8_t : 0;        //
+            uint8_t blower : 2; // 03
+            uint8_t _r3 : 5;    //
+            uint8_t circ : 1;   // bit 7
+            uint8_t : 0;        //
+            uint8_t aux1 : 1;   // 04
+            uint8_t aux2 : 1;   //
+            uint8_t _r4 : 2;    //
+            uint8_t mister : 2; //
+            uint8_t _r5 : 2;    //
+            uint8_t : 0;        //
 
             MessageSuffix _suffix;
         } __attribute__((packed));
@@ -272,13 +272,13 @@ namespace esphome
 
         enum ToggleItem
         {
-            tiPump1       = 0x04,
-            tiPump2       = 0x05,
-            tiPump3       = 0x06,
-            tiBlower      = 0x0C,
-            tiLight1      = 0x11,
-            tiHoldMode    = 0x3C,
-            tiTempRange   = 0x50,
+            tiPump1 = 0x04,
+            tiPump2 = 0x05,
+            tiPump3 = 0x06,
+            tiBlower = 0x0C,
+            tiLight1 = 0x11,
+            tiHoldMode = 0x3C,
+            tiTempRange = 0x50,
             tiHeatingMode = 0x51,
         };
 
@@ -327,16 +327,16 @@ namespace esphome
         {
             SetFilterConfigMessage(
                 uint8_t f1_start_hour, uint8_t f1_start_minute,
-                uint8_t f1_dur_hour,   uint8_t f1_dur_minute,
-                bool    f2_enable,
+                uint8_t f1_dur_hour, uint8_t f1_dur_minute,
+                bool f2_enable,
                 uint8_t f2_start_hour, uint8_t f2_start_minute,
-                uint8_t f2_dur_hour,   uint8_t f2_dur_minute);
+                uint8_t f2_dur_hour, uint8_t f2_dur_minute);
 
             uint8_t _f1_start_hour;
             uint8_t _f1_start_minute;
             uint8_t _f1_dur_hour;
             uint8_t _f1_dur_minute;
-            uint8_t _f2_start;          // f2_start_hour | 0x80 when enabled
+            uint8_t _f2_start; // f2_start_hour | 0x80 when enabled
             uint8_t _f2_start_minute;
             uint8_t _f2_dur_hour;
             uint8_t _f2_dur_minute;
@@ -365,10 +365,10 @@ namespace esphome
         // Acknowledge a newly assigned client ID.
         struct IDACKMessage : public esphome::balboa_spa::MessageBaseOutgoing
         {
-            IDACKMessage();   // call set_client(id) then SetCRC() before sending
+            IDACKMessage(); // call set_client(id) then SetCRC() before sending
 
             MessageSuffix _suffix;
         } __attribute__((packed));
 
-    }
-}
+    } // namespace balboa_spa
+} // namespace esphome

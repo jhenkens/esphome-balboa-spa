@@ -12,7 +12,7 @@ namespace esphome
         {
             if (str.empty())
                 return false;
-            
+
             result = 0;
             for (char c : str)
             {
@@ -42,26 +42,26 @@ namespace esphome
             // Extract hour and minute using safe parsing
             std::string hour_str = time_str.substr(0, colon_pos);
             std::string minute_str = time_str.substr(colon_pos + 1);
-            
+
             // Minute should always be 2 digits
             if (minute_str.length() != 2)
             {
                 return false;
             }
-            
+
             int h, m;
             if (!safe_parse_int(hour_str, h) || !safe_parse_int(minute_str, m))
             {
                 return false;
             }
-            
+
             if (h >= 0 && h < 24 && m >= 0 && m < 60)
             {
                 hour = static_cast<uint8_t>(h);
                 minute = static_cast<uint8_t>(m);
                 return true;
             }
-            
+
             return false;
         }
 
@@ -70,25 +70,26 @@ namespace esphome
         {
             this->spa_ = parent;
             // Register listener to update from spa state
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void SpaTimeText::update()
         {
             const SpaState *state = spa_->get_current_state();
             char time_str[6];
-                snprintf(time_str, sizeof(time_str), "%02d:%02d", state->hour, state->minutes);
-                std::string current_time(time_str);
-                
-                // Only update if the value has changed to avoid unnecessary updates
-                if (this->state != current_time)
-                {
-                    // Set flag to indicate this update comes from the spa
-                    this->updating_from_spa_ = true;
-                    this->state = current_time;
-                    this->publish_state(current_time);
-                    this->updating_from_spa_ = false;
-                }
+            snprintf(time_str, sizeof(time_str), "%02d:%02d", state->hour, state->minutes);
+            std::string current_time(time_str);
+
+            // Only update if the value has changed to avoid unnecessary updates
+            if (this->state != current_time)
+            {
+                // Set flag to indicate this update comes from the spa
+                this->updating_from_spa_ = true;
+                this->state = current_time;
+                this->publish_state(current_time);
+                this->updating_from_spa_ = false;
+            }
         }
 
         void SpaTimeText::control(const std::string &value)
@@ -121,9 +122,8 @@ namespace esphome
         {
             this->spa_ = parent;
             // Register filter listener to update from spa filter settings
-            parent->register_filter_listener([this](SpaFilterSettings *settings) {
-                this->update_from_filter_settings(settings);
-            });
+            parent->register_filter_listener([this](SpaFilterSettings *settings)
+                                             { this->update_from_filter_settings(settings); });
         }
 
         void SpaFilter1StartTimeText::update_from_filter_settings(SpaFilterSettings *settings)
@@ -133,7 +133,7 @@ namespace esphome
                 char time_str[6];
                 snprintf(time_str, sizeof(time_str), "%02d:%02d", settings->filter1_hour, settings->filter1_minute);
                 std::string current_time(time_str);
-                
+
                 // Only update if the value has changed to avoid unnecessary updates
                 if (this->state != current_time)
                 {
@@ -170,9 +170,8 @@ namespace esphome
         {
             this->spa_ = parent;
             // Register filter listener to update from spa filter settings
-            parent->register_filter_listener([this](SpaFilterSettings *settings) {
-                this->update_from_filter_settings(settings);
-            });
+            parent->register_filter_listener([this](SpaFilterSettings *settings)
+                                             { this->update_from_filter_settings(settings); });
         }
 
         void SpaFilter1DurationText::update_from_filter_settings(SpaFilterSettings *settings)
@@ -182,7 +181,7 @@ namespace esphome
                 char time_str[6];
                 snprintf(time_str, sizeof(time_str), "%02d:%02d", settings->filter1_duration_hour, settings->filter1_duration_minute);
                 std::string current_duration(time_str);
-                
+
                 // Only update if the value has changed to avoid unnecessary updates
                 if (this->state != current_duration)
                 {
@@ -221,9 +220,8 @@ namespace esphome
         {
             this->spa_ = parent;
             // Register filter listener to update from spa filter settings
-            parent->register_filter_listener([this](SpaFilterSettings *settings) {
-                this->update_from_filter_settings(settings);
-            });
+            parent->register_filter_listener([this](SpaFilterSettings *settings)
+                                             { this->update_from_filter_settings(settings); });
         }
 
         void SpaFilter2StartTimeText::update_from_filter_settings(SpaFilterSettings *settings)
@@ -231,7 +229,7 @@ namespace esphome
             if (settings != nullptr)
             {
                 std::string current_time;
-                
+
                 // If filter2 is disabled, clear the text field
                 if (settings->filter2_enable == 0)
                 {
@@ -244,7 +242,7 @@ namespace esphome
                     snprintf(time_str, sizeof(time_str), "%02d:%02d", settings->filter2_hour, settings->filter2_minute);
                     current_time = std::string(time_str);
                 }
-                
+
                 // Only update if the value has changed to avoid unnecessary updates
                 if (this->state != current_time)
                 {
@@ -281,9 +279,8 @@ namespace esphome
         {
             this->spa_ = parent;
             // Register filter listener to update from spa filter settings
-            parent->register_filter_listener([this](SpaFilterSettings *settings) {
-                this->update_from_filter_settings(settings);
-            });
+            parent->register_filter_listener([this](SpaFilterSettings *settings)
+                                             { this->update_from_filter_settings(settings); });
         }
 
         void SpaFilter2DurationText::update_from_filter_settings(SpaFilterSettings *settings)
@@ -291,7 +288,7 @@ namespace esphome
             if (settings != nullptr)
             {
                 std::string current_duration;
-                
+
                 // If filter2 is disabled, clear the text field
                 if (settings->filter2_enable == 0)
                 {
@@ -304,7 +301,7 @@ namespace esphome
                     snprintf(time_str, sizeof(time_str), "%02d:%02d", settings->filter2_duration_hour, settings->filter2_duration_minute);
                     current_duration = std::string(time_str);
                 }
-                
+
                 // Only update if the value has changed to avoid unnecessary updates
                 if (this->state != current_duration)
                 {

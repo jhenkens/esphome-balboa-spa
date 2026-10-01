@@ -1,16 +1,11 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor
-
-from .. import (
-    balboa_spa_ns,
-    BalboaSpa,
-    CONF_SPA_ID
-)
-
 from esphome.const import (
     DEVICE_CLASS_TEMPERATURE,
 )
+
+from .. import CONF_SPA_ID, BalboaSpa, balboa_spa_ns
 
 DEPENDENCIES = ["balboa_spa"]
 
@@ -94,19 +89,36 @@ CONFIG_SCHEMA = cv.Schema(
             SpaFaultLogSensor,
             icon="mdi:calendar-clock",
         ),
-    })
+    }
+)
+
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_SPA_ID])
 
-    for sensor_type in [CONF_BLOWER, CONF_HIGHRANGE, CONF_CIRCULATION, CONF_RESTMODE, CONF_HEATSTATE, CONF_CURRENT_TEMP, CONF_TARGET_TEMP, CONF_SPA_TEMP_SCALE, CONF_TIME_SINCE_LAST_STATUS]:
+    for sensor_type in [
+        CONF_BLOWER,
+        CONF_HIGHRANGE,
+        CONF_CIRCULATION,
+        CONF_RESTMODE,
+        CONF_HEATSTATE,
+        CONF_CURRENT_TEMP,
+        CONF_TARGET_TEMP,
+        CONF_SPA_TEMP_SCALE,
+        CONF_TIME_SINCE_LAST_STATUS,
+    ]:
         if conf := config.get(sensor_type):
             var = await sensor.new_sensor(conf)
             cg.add(var.set_parent(parent))
             sensor_type_value = getattr(SpaSensorTypeEnum, sensor_type.upper())
             cg.add(var.set_sensor_type(sensor_type_value))
-    
-    for sensor_type in [CONF_FAULT_CODE, CONF_FAULT_TOTAL_ENTRIES, CONF_FAULT_CURRENT_ENTRY, CONF_FAULT_DAYS_AGO]:
+
+    for sensor_type in [
+        CONF_FAULT_CODE,
+        CONF_FAULT_TOTAL_ENTRIES,
+        CONF_FAULT_CURRENT_ENTRY,
+        CONF_FAULT_DAYS_AGO,
+    ]:
         if conf := config.get(sensor_type):
             var = await sensor.new_sensor(conf)
             cg.add(var.set_parent(parent))

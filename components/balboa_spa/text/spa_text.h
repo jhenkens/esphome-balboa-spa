@@ -7,84 +7,84 @@
 
 namespace esphome
 {
-  namespace balboa_spa
-  {
-
-    class SpaTimeText : public text::Text
+    namespace balboa_spa
     {
-    public:
-      SpaTimeText() = default;
-      void set_parent(BalboaSpa *parent);
-      void update();
 
-    protected:
-      void control(const std::string &value) override;
-      
-    private:
-      BalboaSpa *spa_;
-      bool updating_from_spa_ = false;
-      bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
-    };
+        class SpaTimeText : public text::Text
+        {
+        public:
+            SpaTimeText() = default;
+            void set_parent(BalboaSpa *parent);
+            void update();
 
-    class SpaFilter1StartTimeText : public text::Text
-    {
-    public:
-      SpaFilter1StartTimeText() = default;
-      void set_parent(BalboaSpa *parent);
-      void update_from_filter_settings(SpaFilterSettings *settings);
+        protected:
+            void control(const std::string &value) override;
 
-    protected:
-      void control(const std::string &value) override;
-      
-    private:
-      BalboaSpa *spa_;
-      bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
-    };
+        private:
+            BalboaSpa *spa_;
+            bool updating_from_spa_ = false;
+            bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
+        };
 
-    class SpaFilter1DurationText : public text::Text
-    {
-    public:
-      SpaFilter1DurationText() = default;
-      void set_parent(BalboaSpa *parent);
-      void update_from_filter_settings(SpaFilterSettings *settings);
+        class SpaFilter1StartTimeText : public text::Text
+        {
+        public:
+            SpaFilter1StartTimeText() = default;
+            void set_parent(BalboaSpa *parent);
+            void update_from_filter_settings(SpaFilterSettings *settings);
 
-    protected:
-      void control(const std::string &value) override;
-      
-    private:
-      BalboaSpa *spa_;
-      bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
-    };
+        protected:
+            void control(const std::string &value) override;
 
-    class SpaFilter2StartTimeText : public text::Text
-    {
-    public:
-      SpaFilter2StartTimeText() = default;
-      void set_parent(BalboaSpa *parent);
-      void update_from_filter_settings(SpaFilterSettings *settings);
+        private:
+            BalboaSpa *spa_;
+            bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
+        };
 
-    protected:
-      void control(const std::string &value) override;
-      
-    private:
-      BalboaSpa *spa_;
-      bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
-    };
+        class SpaFilter1DurationText : public text::Text
+        {
+        public:
+            SpaFilter1DurationText() = default;
+            void set_parent(BalboaSpa *parent);
+            void update_from_filter_settings(SpaFilterSettings *settings);
 
-    class SpaFilter2DurationText : public text::Text
-    {
-    public:
-      SpaFilter2DurationText() = default;
-      void set_parent(BalboaSpa *parent);
-      void update_from_filter_settings(SpaFilterSettings *settings);
+        protected:
+            void control(const std::string &value) override;
 
-    protected:
-      void control(const std::string &value) override;
-      
-    private:
-      BalboaSpa *spa_;
-      bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
-    };
+        private:
+            BalboaSpa *spa_;
+            bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
+        };
 
-  } // namespace balboa_spa
+        class SpaFilter2StartTimeText : public text::Text
+        {
+        public:
+            SpaFilter2StartTimeText() = default;
+            void set_parent(BalboaSpa *parent);
+            void update_from_filter_settings(SpaFilterSettings *settings);
+
+        protected:
+            void control(const std::string &value) override;
+
+        private:
+            BalboaSpa *spa_;
+            bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
+        };
+
+        class SpaFilter2DurationText : public text::Text
+        {
+        public:
+            SpaFilter2DurationText() = default;
+            void set_parent(BalboaSpa *parent);
+            void update_from_filter_settings(SpaFilterSettings *settings);
+
+        protected:
+            void control(const std::string &value) override;
+
+        private:
+            BalboaSpa *spa_;
+            bool validate_time_format(const std::string &time_str, uint8_t &hour, uint8_t &minute);
+        };
+
+    } // namespace balboa_spa
 } // namespace esphome

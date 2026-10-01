@@ -6,22 +6,22 @@
 
 namespace esphome
 {
-  namespace balboa_spa
-  {
-
-    class HighrangeSwitch : public switch_::Switch
+    namespace balboa_spa
     {
-    public:
-      HighrangeSwitch() {};
-      void update();
-      void set_parent(BalboaSpa *parent);
 
-    protected:
-      void write_state(bool state) override;
+        class HighrangeSwitch : public switch_::Switch
+        {
+        public:
+            HighrangeSwitch() {};
+            void update();
+            void set_parent(BalboaSpa *parent);
 
-    private:
-      BalboaSpa *spa_;
-    };
+        protected:
+            void write_state(bool state) override;
 
-  } // namespace balboa_spa
+        private:
+            BalboaSpa *spa_;
+        };
+
+    } // namespace balboa_spa
 } // namespace esphome

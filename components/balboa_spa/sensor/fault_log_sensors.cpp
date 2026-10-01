@@ -11,7 +11,7 @@ namespace esphome
         void BalboaSpaFaultLogSensors::set_parent(BalboaSpa *parent)
         {
             parent->register_fault_log_listener([this](SpaFaultLog *spaFaultLog)
-                                      { this->update(spaFaultLog); });
+                                                { this->update(spaFaultLog); });
         }
 
         void BalboaSpaFaultLogSensors::update(SpaFaultLog *spaFaultLog)
@@ -43,5 +43,5 @@ namespace esphome
                 this->publish_state(sensor_state_value);
             }
         }
-    }
-}
+    } // namespace balboa_spa
+} // namespace esphome

@@ -7,38 +7,38 @@
 
 namespace esphome
 {
-  namespace balboa_spa
-  {
-
-    class BalboaSpaBinarySensors : public binary_sensor::BinarySensor
+    namespace balboa_spa
     {
-    public:
-      enum class BalboaSpaBinarySensorType : uint8_t
-      {
-        UNKNOWN = 0,
-        BLOWER,
-        HIGH_RANGE,
-        CIRCULATION,
-        REST_MODE,
-        HEAT_STATE,
-        CONNECTED,
-        FILTER1_WINDOW_ACTIVE,
-        FILTER2_WINDOW_ACTIVE,
-        CLEANUP_CYCLE,
-        TIME_SYNCED
-      };
 
-    public:
-      BalboaSpaBinarySensors();
-      void update();
+        class BalboaSpaBinarySensors : public binary_sensor::BinarySensor
+        {
+        public:
+            enum class BalboaSpaBinarySensorType : uint8_t
+            {
+                UNKNOWN = 0,
+                BLOWER,
+                HIGH_RANGE,
+                CIRCULATION,
+                REST_MODE,
+                HEAT_STATE,
+                CONNECTED,
+                FILTER1_WINDOW_ACTIVE,
+                FILTER2_WINDOW_ACTIVE,
+                CLEANUP_CYCLE,
+                TIME_SYNCED
+            };
 
-      void set_parent(BalboaSpa *parent);
-      void set_sensor_type(const BalboaSpaBinarySensorType _type) { sensor_type = _type; }
+        public:
+            BalboaSpaBinarySensors();
+            void update();
 
-    private:
-      BalboaSpaBinarySensorType sensor_type;
-      BalboaSpa *spa_;
-    };
+            void set_parent(BalboaSpa *parent);
+            void set_sensor_type(const BalboaSpaBinarySensorType _type) { sensor_type = _type; }
 
-  } // namespace balboa_spa
+        private:
+            BalboaSpaBinarySensorType sensor_type;
+            BalboaSpa *spa_;
+        };
+
+    } // namespace balboa_spa
 } // namespace esphome

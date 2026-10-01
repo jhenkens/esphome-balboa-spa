@@ -2,11 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import light
 
-from .. import (
-    balboa_spa_ns,
-    BalboaSpa,
-    CONF_SPA_ID
-)
+from .. import CONF_SPA_ID, BalboaSpa, balboa_spa_ns
 
 DEPENDENCIES = ["balboa_spa"]
 
@@ -20,7 +16,9 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(CONF_SPA_ID): cv.use_id(BalboaSpa),
         cv.Optional(CONF_LIGHT): light.light_schema(SpaLight, light.LightType.BINARY),
         cv.Optional(CONF_LIGHT2): light.light_schema(SpaLight, light.LightType.BINARY),
-    })
+    }
+)
+
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_SPA_ID])

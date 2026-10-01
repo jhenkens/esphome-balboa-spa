@@ -47,7 +47,8 @@ namespace esphome
         void BalboaSpaBinarySensors::set_parent(BalboaSpa *parent)
         {
             this->spa_ = parent;
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void BalboaSpaBinarySensors::update()
@@ -142,5 +143,5 @@ namespace esphome
             sensor_type = BalboaSpaBinarySensorType::UNKNOWN;
         }
 
-    }
-}
+    } // namespace balboa_spa
+} // namespace esphome

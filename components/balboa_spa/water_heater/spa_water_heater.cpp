@@ -25,7 +25,7 @@ namespace esphome
             traits_.set_supported_modes({
                 water_heater::WATER_HEATER_MODE_OFF,
                 water_heater::WATER_HEATER_MODE_ECO,
-                water_heater::WATER_HEATER_MODE_ELECTRIC    ,
+                water_heater::WATER_HEATER_MODE_ELECTRIC,
             });
             traits_.set_supports_current_temperature(true);
             traits_.set_min_temperature(range_min());

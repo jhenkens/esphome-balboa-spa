@@ -18,15 +18,14 @@ namespace esphome
         {
             spa_ = parent;
             // Subscribe to filter settings updates to sync switch state
-            parent->register_filter_listener([this](SpaFilterSettings *filterSettings) {
-                this->update(filterSettings);
-            });
+            parent->register_filter_listener([this](SpaFilterSettings *filterSettings)
+                                             { this->update(filterSettings); });
         }
 
         void Filter2Switch::write_state(bool state)
         {
             SpaFilterSettings *settings = spa_->get_current_filter_settings();
-            
+
             if (state)
             {
                 // User wants to turn ON filter 2
@@ -43,9 +42,8 @@ namespace esphome
                     settings->filter2_hour,
                     settings->filter2_minute,
                     settings->filter2_duration_hour,
-                    settings->filter2_duration_minute
-                );
-                ESP_LOGI(TAG, "Filter 2 enabled with start time %02d:%02d and duration %02d:%02d", 
+                    settings->filter2_duration_minute);
+                ESP_LOGI(TAG, "Filter 2 enabled with start time %02d:%02d and duration %02d:%02d",
                          settings->filter2_hour, settings->filter2_minute,
                          settings->filter2_duration_hour, settings->filter2_duration_minute);
                 // Request fresh filter settings to ensure switch state syncs promptly

@@ -9,5 +9,5 @@ esphome:
 
 esp32:
   board: lolin_s2_mini
-  framework: 
+  framework:
     type: arduino

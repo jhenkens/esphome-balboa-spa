@@ -4,21 +4,21 @@
 
 namespace esphome
 {
-  namespace balboa_spa
-  {
-
-    class FaultLogTimeTextSensor : public text_sensor::TextSensor
+    namespace balboa_spa
     {
-    public:
-      void set_parent(BalboaSpa *parent);
-      void update(SpaFaultLog *spaFaultLog);
 
-    private:
-      // Store last known values for change detection
-      uint8_t last_days_ago_ = 255;
-      uint8_t last_hour_ = 255;
-      uint8_t last_minutes_ = 255;
-    };
+        class FaultLogTimeTextSensor : public text_sensor::TextSensor
+        {
+        public:
+            void set_parent(BalboaSpa *parent);
+            void update(SpaFaultLog *spaFaultLog);
 
-  } // namespace balboa_spa
+        private:
+            // Store last known values for change detection
+            uint8_t last_days_ago_ = 255;
+            uint8_t last_hour_ = 255;
+            uint8_t last_minutes_ = 255;
+        };
+
+    } // namespace balboa_spa
 } // namespace esphome

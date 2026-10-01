@@ -23,7 +23,8 @@ namespace esphome
         void JetSwitchBase::set_parent(BalboaSpa *parent)
         {
             JetToggleComponentBase::set_parent(parent);
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void JetSwitchBase::write_state(bool state)

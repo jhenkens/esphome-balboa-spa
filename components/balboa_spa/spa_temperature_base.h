@@ -20,7 +20,8 @@ namespace esphome
             void set_temp_scale(TEMP_SCALE scale) { temp_scale_ = scale; }
 
         protected:
-            void spa_temp_init(BalboaSpa *spa, TEMP_SCALE scale = TEMP_SCALE::UNKNOWN){
+            void spa_temp_init(BalboaSpa *spa, TEMP_SCALE scale = TEMP_SCALE::UNKNOWN)
+            {
                 this->spa_temp_init(spa, true, scale);
             }
             // Call in set_parent(), passing the component's unit_of_measurement.
@@ -32,13 +33,17 @@ namespace esphome
             {
                 spa_ = spa;
                 if (spa_->get_live_range_refresh() && includeHighrangeListener)
-                    spa_->register_highrange_listener([this]() { update_traits(); });
-                spa_->register_listener([this]() { update(); });
-                if(scale != TEMP_SCALE::UNKNOWN){
+                    spa_->register_highrange_listener([this]()
+                                                      { update_traits(); });
+                spa_->register_listener([this]()
+                                        { update(); });
+                if (scale != TEMP_SCALE::UNKNOWN)
+                {
                     temp_scale_ = scale;
                 }
-                if(temp_scale_ == TEMP_SCALE::UNKNOWN){
-                    temp_scale_ = TEMP_SCALE::C; 
+                if (temp_scale_ == TEMP_SCALE::UNKNOWN)
+                {
+                    temp_scale_ = TEMP_SCALE::C;
                 }
             }
 
@@ -78,10 +83,12 @@ namespace esphome
                 float converted;
                 if (spa_scale == temp_scale_)
                     converted = val_spa;
-                else if (spa_scale == TEMP_SCALE::C){
+                else if (spa_scale == TEMP_SCALE::C)
+                {
                     converted = TEMP_C_TO_F(val_spa);
                 }
-                else{
+                else
+                {
                     converted = TEMP_F_TO_C(val_spa);
                 }
                 return converted;

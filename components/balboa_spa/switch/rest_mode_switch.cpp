@@ -20,7 +20,8 @@ namespace esphome
         void RestModeSwitch::set_parent(BalboaSpa *parent)
         {
             spa_ = parent;
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void RestModeSwitch::write_state(bool state)

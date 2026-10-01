@@ -1,19 +1,14 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import switch
-
 from esphome.const import (
     CONF_ID,
-    ICON_LIGHTBULB,
     ICON_GRAIN,
+    ICON_LIGHTBULB,
     ICON_THERMOMETER,
 )
 
-from .. import (
-    balboa_spa_ns,
-    BalboaSpa,
-    CONF_SPA_ID
-)
+from .. import CONF_SPA_ID, BalboaSpa, balboa_spa_ns
 
 DEPENDENCIES = ["balboa_spa"]
 
@@ -36,14 +31,18 @@ CONF_FILTER2 = "filter2"
 CONF_REST_MODE = "rest_mode"
 CONF_ON_LEVEL = "on_level"
 
+
 def jet_switch_schema(cls):
     return switch.switch_schema(
         cls,
         icon="mdi:pump",
         default_restore_mode="DISABLED",
-    ).extend({
-        cv.Optional(CONF_ON_LEVEL, default=1): cv.one_of(1, 2, int=True),
-    })
+    ).extend(
+        {
+            cv.Optional(CONF_ON_LEVEL, default=1): cv.one_of(1, 2, int=True),
+        }
+    )
+
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -82,12 +81,16 @@ CONFIG_SCHEMA = cv.Schema(
             icon=ICON_THERMOMETER,
             default_restore_mode="DISABLED",
         ),
-    })
+    }
+)
+
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_SPA_ID])
 
-    for jet_index, switch_type in enumerate([CONF_JET1, CONF_JET2, CONF_JET3, CONF_JET4], start=1):
+    for jet_index, switch_type in enumerate(
+        [CONF_JET1, CONF_JET2, CONF_JET3, CONF_JET4], start=1
+    ):
         if conf := config.get(switch_type):
             sw_var = cg.new_Pvariable(conf[CONF_ID], jet_index)
             await switch.register_switch(sw_var, conf)

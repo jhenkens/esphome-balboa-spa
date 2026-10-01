@@ -9,7 +9,8 @@ namespace esphome
         void ReminderTextSensor::set_parent(BalboaSpa *parent)
         {
             spa_ = parent;
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void ReminderTextSensor::update()
@@ -24,32 +25,32 @@ namespace esphome
                 std::string reminder_message;
                 switch (spaState->reminder)
                 {
-                    case ReminderType::NONE:
-                        reminder_message = "None";
-                        break;
-                    case ReminderType::PRIMING:
-                        reminder_message = "Priming";
-                        break;
-                    case ReminderType::CLEAN_FILTER:
-                        reminder_message = "Clean Filter";
-                        break;
-                    case ReminderType::CHECK_SANITIZER:
-                        reminder_message = "Check Sanitizer";
-                        break;
-                    case ReminderType::CHECK_PH:
-                        reminder_message = "Check pH";
-                        break;
-                    case ReminderType::FAULT:
-                        reminder_message = "Fault";
-                        break;
-                    default:
-                        // Format unknown reminder code in hex
-                        char hex_str[8];
-                        snprintf(hex_str, sizeof(hex_str), "0x%02X", static_cast<uint8_t>(spaState->reminder));
-                        reminder_message = std::string("Unknown (") + hex_str + ")";
-                        break;
+                case ReminderType::NONE:
+                    reminder_message = "None";
+                    break;
+                case ReminderType::PRIMING:
+                    reminder_message = "Priming";
+                    break;
+                case ReminderType::CLEAN_FILTER:
+                    reminder_message = "Clean Filter";
+                    break;
+                case ReminderType::CHECK_SANITIZER:
+                    reminder_message = "Check Sanitizer";
+                    break;
+                case ReminderType::CHECK_PH:
+                    reminder_message = "Check pH";
+                    break;
+                case ReminderType::FAULT:
+                    reminder_message = "Fault";
+                    break;
+                default:
+                    // Format unknown reminder code in hex
+                    char hex_str[8];
+                    snprintf(hex_str, sizeof(hex_str), "0x%02X", static_cast<uint8_t>(spaState->reminder));
+                    reminder_message = std::string("Unknown (") + hex_str + ")";
+                    break;
                 }
-                
+
                 ESP_LOGD(TAG, "Reminder update: %s (0x%02X)",
                          reminder_message.c_str(), static_cast<uint8_t>(spaState->reminder));
                 this->publish_state(reminder_message);

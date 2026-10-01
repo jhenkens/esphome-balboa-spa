@@ -9,7 +9,6 @@
 #define MSGTYPE_FMT "%02X %02X %02X"
 #define MSGTYPE_ARGS(t) (unsigned)((t) & 0xFF), (unsigned)(((t) >> 8) & 0xFF), (unsigned)(((t) >> 16) & 0xFF)
 
-
 namespace esphome
 {
     namespace balboa_spa
@@ -65,7 +64,8 @@ namespace esphome
         void BalboaSpa::update()
         {
             uint32_t now = millis();
-            if(now - setup_time_ < startup_delay_ms_) {
+            if (now - setup_time_ < startup_delay_ms_)
+            {
                 last_received_time = now;
                 return;
             }
@@ -87,7 +87,9 @@ namespace esphome
             else if (status_has_error())
             {
                 status_clear_error();
-            } else{
+            }
+            else
+            {
                 last_dead_log_time = 0;
             }
 
@@ -106,7 +108,8 @@ namespace esphome
             ESP_LOGV(TAG, "Checking serial for incoming data...");
             while (true)
             {
-                if(!read_serial()){
+                if (!read_serial())
+                {
                     break;
                 }
             }
@@ -143,7 +146,7 @@ namespace esphome
             uint32_t now_dispatch = millis();
             bool keepalive = (now_dispatch - last_listener_dispatch_time) >= listener_keepalive_ms_;
 
-            if(highrange_dirty_ || keepalive)
+            if (highrange_dirty_ || keepalive)
             {
                 highrange_dirty_ = false;
                 for (const auto &listener : this->highrange_listeners_)
@@ -174,16 +177,26 @@ namespace esphome
         {
             switch (code)
             {
-            case 0x04: return ExpectedField::JET_0;
-            case 0x05: return ExpectedField::JET_1;
-            case 0x06: return ExpectedField::JET_2;
-            case 0x07: return ExpectedField::JET_3;
-            case tiBlower:      return ExpectedField::BLOWER;
-            case 0x11:          return ExpectedField::LIGHT_0;
-            case 0x12:          return ExpectedField::LIGHT_1;
-            case tiTempRange:   return ExpectedField::HIGH_RANGE;
-            case tiHeatingMode: return ExpectedField::REST_MODE;
-            default:            return ExpectedField::NONE;
+            case 0x04:
+                return ExpectedField::JET_0;
+            case 0x05:
+                return ExpectedField::JET_1;
+            case 0x06:
+                return ExpectedField::JET_2;
+            case 0x07:
+                return ExpectedField::JET_3;
+            case tiBlower:
+                return ExpectedField::BLOWER;
+            case 0x11:
+                return ExpectedField::LIGHT_0;
+            case 0x12:
+                return ExpectedField::LIGHT_1;
+            case tiTempRange:
+                return ExpectedField::HIGH_RANGE;
+            case tiHeatingMode:
+                return ExpectedField::REST_MODE;
+            default:
+                return ExpectedField::NONE;
             }
         }
 
@@ -192,21 +205,29 @@ namespace esphome
             if (cmd.type == CmdType::SET_FILTER)
                 return filter_cmd_satisfied(cmd);
             if (cmd.type == CmdType::SET_TEMP)
-                return (spa_temp_scale != TEMP_SCALE::C && spa_temp_scale != TEMP_SCALE::F)
-                    || (!std::isnan(spaState.target_temp) && spaState.target_temp == cmd.target_temperature);
+                return (spa_temp_scale != TEMP_SCALE::C && spa_temp_scale != TEMP_SCALE::F) || (!std::isnan(spaState.target_temp) && spaState.target_temp == cmd.target_temperature);
             if (cmd.type == CmdType::SET_TIME)
                 return spaState.hour == cmd.time.hour && spaState.minutes == cmd.time.minute;
             switch (cmd.target_field)
             {
-            case ExpectedField::JET_0:    return spaState.jets[0] == cmd.expected_toggle_value;
-            case ExpectedField::JET_1:    return spaState.jets[1] == cmd.expected_toggle_value;
-            case ExpectedField::JET_2:    return spaState.jets[2] == cmd.expected_toggle_value;
-            case ExpectedField::JET_3:    return spaState.jets[3] == cmd.expected_toggle_value;
-            case ExpectedField::BLOWER:   return spaState.blower == cmd.expected_toggle_value;
-            case ExpectedField::LIGHT_0:  return spaState.lights[0] == cmd.expected_toggle_value;
-            case ExpectedField::LIGHT_1:  return spaState.lights[1] == cmd.expected_toggle_value;
-            case ExpectedField::HIGH_RANGE: return (spaState.highrange & 0x1) == cmd.expected_toggle_value;
-            case ExpectedField::REST_MODE: return (uint8_t)spaState.rest_mode == cmd.expected_toggle_value;
+            case ExpectedField::JET_0:
+                return spaState.jets[0] == cmd.expected_toggle_value;
+            case ExpectedField::JET_1:
+                return spaState.jets[1] == cmd.expected_toggle_value;
+            case ExpectedField::JET_2:
+                return spaState.jets[2] == cmd.expected_toggle_value;
+            case ExpectedField::JET_3:
+                return spaState.jets[3] == cmd.expected_toggle_value;
+            case ExpectedField::BLOWER:
+                return spaState.blower == cmd.expected_toggle_value;
+            case ExpectedField::LIGHT_0:
+                return spaState.lights[0] == cmd.expected_toggle_value;
+            case ExpectedField::LIGHT_1:
+                return spaState.lights[1] == cmd.expected_toggle_value;
+            case ExpectedField::HIGH_RANGE:
+                return (spaState.highrange & 0x1) == cmd.expected_toggle_value;
+            case ExpectedField::REST_MODE:
+                return (uint8_t)spaState.rest_mode == cmd.expected_toggle_value;
             case ExpectedField::TARGET_TEMP:
                 return !std::isnan(spaState.target_temp) && spaState.target_temp == cmd.target_temperature;
             case ExpectedField::CLOCK_24H:
@@ -228,20 +249,21 @@ namespace esphome
         bool BalboaSpa::filter_cmd_satisfied(const PendingCmd &c) const
         {
             return c.target_field == ExpectedField::FILTER &&
-                spaFilterSettings.filter1_hour            == c.filter.f1_start_hour   &&
-                spaFilterSettings.filter1_minute          == c.filter.f1_start_minute &&
-                spaFilterSettings.filter1_duration_hour   == c.filter.f1_dur_hour     &&
-                spaFilterSettings.filter1_duration_minute == c.filter.f1_dur_minute   &&
-                spaFilterSettings.filter2_enable          == c.filter.f2_enable       &&
-                spaFilterSettings.filter2_hour            == c.filter.f2_start_hour   &&
-                spaFilterSettings.filter2_minute          == c.filter.f2_start_minute &&
-                spaFilterSettings.filter2_duration_hour   == c.filter.f2_dur_hour     &&
-                spaFilterSettings.filter2_duration_minute == c.filter.f2_dur_minute;
+                   spaFilterSettings.filter1_hour == c.filter.f1_start_hour &&
+                   spaFilterSettings.filter1_minute == c.filter.f1_start_minute &&
+                   spaFilterSettings.filter1_duration_hour == c.filter.f1_dur_hour &&
+                   spaFilterSettings.filter1_duration_minute == c.filter.f1_dur_minute &&
+                   spaFilterSettings.filter2_enable == c.filter.f2_enable &&
+                   spaFilterSettings.filter2_hour == c.filter.f2_start_hour &&
+                   spaFilterSettings.filter2_minute == c.filter.f2_start_minute &&
+                   spaFilterSettings.filter2_duration_hour == c.filter.f2_dur_hour &&
+                   spaFilterSettings.filter2_duration_minute == c.filter.f2_dur_minute;
         }
 
         void BalboaSpa::rebuild_pending_msg()
         {
-            if (cmd_count_ == 0 || client_id == 0) {
+            if (cmd_count_ == 0 || client_id == 0)
+            {
                 pending_msg_len_ = 0;
                 return;
             }
@@ -255,7 +277,8 @@ namespace esphome
 
             switch (head.type)
             {
-            case CmdType::TOGGLE: {
+            case CmdType::TOGGLE:
+            {
                 ToggleItemMessage msg(static_cast<ToggleItem>(head.toggle_code));
                 msg.set_client(client_id);
                 msg.SetCRC();
@@ -263,10 +286,11 @@ namespace esphome
                 pending_msg_len_ = msg._length;
                 break;
             }
-            case CmdType::SET_TEMP: {
+            case CmdType::SET_TEMP:
+            {
                 uint8_t raw = (spa_temp_scale == TEMP_SCALE::C)
-                    ? (uint8_t)roundf(head.target_temperature * 2.0f)
-                    : (uint8_t)roundf(head.target_temperature);
+                                  ? (uint8_t)roundf(head.target_temperature * 2.0f)
+                                  : (uint8_t)roundf(head.target_temperature);
                 SetSpaTempMessage msg({raw});
                 msg.set_client(client_id);
                 msg.SetCRC();
@@ -274,7 +298,8 @@ namespace esphome
                 pending_msg_len_ = msg._length;
                 break;
             }
-            case CmdType::SET_TIME: {
+            case CmdType::SET_TIME:
+            {
                 SetSpaTime msg({head.time.hour, head.time.minute, false});
                 msg.set_client(client_id);
                 msg.SetCRC();
@@ -282,7 +307,8 @@ namespace esphome
                 pending_msg_len_ = msg._length;
                 break;
             }
-            case CmdType::SET_PREF: {
+            case CmdType::SET_PREF:
+            {
                 SetPreferenceMessage msg(head.pref.code, head.pref.data);
                 msg.set_client(client_id);
                 msg.SetCRC();
@@ -290,13 +316,14 @@ namespace esphome
                 pending_msg_len_ = msg._length;
                 break;
             }
-            case CmdType::SET_FILTER: {
+            case CmdType::SET_FILTER:
+            {
                 SetFilterConfigMessage msg(
                     head.filter.f1_start_hour, head.filter.f1_start_minute,
-                    head.filter.f1_dur_hour,   head.filter.f1_dur_minute,
+                    head.filter.f1_dur_hour, head.filter.f1_dur_minute,
                     head.filter.f2_enable != 0,
                     head.filter.f2_start_hour, head.filter.f2_start_minute,
-                    head.filter.f2_dur_hour,   head.filter.f2_dur_minute);
+                    head.filter.f2_dur_hour, head.filter.f2_dur_minute);
                 msg.set_client(client_id);
                 msg.SetCRC();
                 memcpy(pending_msg_buf_, &msg, msg._length);
@@ -329,7 +356,8 @@ namespace esphome
 
         void BalboaSpa::insert_cmd(PendingCmd cmd)
         {
-            if (is_satisfied(cmd)) {
+            if (is_satisfied(cmd))
+            {
                 ESP_LOGD(TAG, "Command field=%d already satisfied, not adding to queue", (int)cmd.target_field);
                 return;
             }
@@ -370,7 +398,6 @@ namespace esphome
             prune_and_rebuild();
         }
 
-
         void BalboaSpa::enqueue_toggle(uint8_t code, ExpectedField field, uint8_t expected_toggle_value, uint8_t max_retries)
         {
             PendingCmd cmd;
@@ -388,15 +415,15 @@ namespace esphome
             cmd.type = CmdType::SET_FILTER;
             cmd.target_field = ExpectedField::FILTER;
             cmd.max_retries = 5;
-            cmd.filter.f1_start_hour   = target_filter1_start_hour;
+            cmd.filter.f1_start_hour = target_filter1_start_hour;
             cmd.filter.f1_start_minute = target_filter1_start_minute;
-            cmd.filter.f1_dur_hour     = target_filter1_duration_hour;
-            cmd.filter.f1_dur_minute   = target_filter1_duration_minute;
-            cmd.filter.f2_enable       = target_filter2_enable ? 1 : 0;
-            cmd.filter.f2_start_hour   = target_filter2_start_hour;
+            cmd.filter.f1_dur_hour = target_filter1_duration_hour;
+            cmd.filter.f1_dur_minute = target_filter1_duration_minute;
+            cmd.filter.f2_enable = target_filter2_enable ? 1 : 0;
+            cmd.filter.f2_start_hour = target_filter2_start_hour;
             cmd.filter.f2_start_minute = target_filter2_start_minute;
-            cmd.filter.f2_dur_hour     = target_filter2_duration_hour;
-            cmd.filter.f2_dur_minute   = target_filter2_duration_minute;
+            cmd.filter.f2_dur_hour = target_filter2_duration_hour;
+            cmd.filter.f2_dur_minute = target_filter2_duration_minute;
             insert_cmd(cmd);
         }
 
@@ -410,8 +437,8 @@ namespace esphome
 
             // temp is in the spa's native unit — validate overall range
             bool valid = (spa_temp_scale == TEMP_SCALE::C)
-                ? (temp >= LOWRANGE_MIN_TEMP_C && temp <= HIGHRANGE_MAX_TEMP_C)
-                : (temp >= LOWRANGE_MIN_TEMP_F && temp <= HIGHRANGE_MAX_TEMP_F);
+                             ? (temp >= LOWRANGE_MIN_TEMP_C && temp <= HIGHRANGE_MAX_TEMP_C)
+                             : (temp >= LOWRANGE_MIN_TEMP_F && temp <= HIGHRANGE_MAX_TEMP_F);
 
             if (!valid)
             {
@@ -422,11 +449,11 @@ namespace esphome
             // Auto-switch range if temp is outside the current range's bounds.
             // Temps in the overlap zone (HIGHRANGE_MIN..LOWRANGE_MAX) require no range change.
             bool needs_high = (spa_temp_scale == TEMP_SCALE::C)
-                ? (temp > LOWRANGE_MAX_TEMP_C)
-                : (temp > LOWRANGE_MAX_TEMP_F);
+                                  ? (temp > LOWRANGE_MAX_TEMP_C)
+                                  : (temp > LOWRANGE_MAX_TEMP_F);
             bool needs_low = (spa_temp_scale == TEMP_SCALE::C)
-                ? (temp < HIGHRANGE_MIN_TEMP_C)
-                : (temp < HIGHRANGE_MIN_TEMP_F);
+                                 ? (temp < HIGHRANGE_MIN_TEMP_C)
+                                 : (temp < HIGHRANGE_MIN_TEMP_F);
 
             if (needs_high)
                 set_highrange(true);
@@ -435,7 +462,7 @@ namespace esphome
 
             PendingCmd temp_cmd;
             temp_cmd.type = CmdType::SET_TEMP;
-            temp_cmd.target_temperature = temp;  // raw conversion happens at send time
+            temp_cmd.target_temperature = temp; // raw conversion happens at send time
             temp_cmd.target_field = ExpectedField::TARGET_TEMP;
             temp_cmd.max_retries = 5;
             insert_cmd(temp_cmd);
@@ -638,29 +665,37 @@ namespace esphome
 
         bool BalboaSpa::read_serial()
         {
-            while(input_failed && available() >= 2){
+            while (input_failed && available() >= 2)
+            {
                 read_byte(&received_byte);
-                if(received_byte == 0x7E){
-                    if(peek_equals(0x7E)){
+                if (received_byte == 0x7E)
+                {
+                    if (peek_equals(0x7E))
+                    {
                         input_failed = false;
                         input_started = false;
                     }
                 }
             }
 
-            if(input_failed){
+            if (input_failed)
+            {
                 return false;
             }
 
             // Waiting for SOF
-            if(!input_started){
-                if(available() < 2){
+            if (!input_started)
+            {
+                if (available() < 2)
+                {
                     // Need at least 2 to check for duplicate SOF or new SOF
                     return false;
                 }
                 read_byte(&received_byte);
-                if(received_byte == 0x7E){
-                    if(peek_equals(0x7E)){
+                if (received_byte == 0x7E)
+                {
+                    if (peek_equals(0x7E))
+                    {
                         ESP_LOGV(TAG, "Skipping duplicate SOF byte");
                         // Don't do anything, the next read will handle it.
                         return true;
@@ -683,7 +718,9 @@ namespace esphome
                         return true;
                     }
                     input_started = true;
-                } else{
+                }
+                else
+                {
                     return true; // Not the start of a packet, but we consumed a byte, so return true to indicate progress.
                 }
             }
@@ -691,19 +728,22 @@ namespace esphome
             size_t length = (size_t)(input_buffer[0]);
 
             // length byte includes itself, but we also need the closing message, so read until length (which is length byte + payload) + 1 (closing byte)
-            if(available() < length){
+            if (available() < length)
+            {
                 // Not enough bytes available yet, wait for the next update to read more.
                 return false;
             }
 
-            if(!read_array(&input_buffer[1], length - 1)){
+            if (!read_array(&input_buffer[1], length - 1))
+            {
                 // Failed to read the expected number of bytes, mark as failed and wait for the next packet.
                 ESP_LOGV(TAG, "Failed to read expected bytes. Expected: %d", length - 1);
                 input_failed = true;
                 return true;
             }
 
-            if(!peek_equals(0x7E)){
+            if (!peek_equals(0x7E))
+            {
                 // Failed to peek the closing byte, mark as failed and wait for the next packet.
                 ESP_LOGV(TAG, "Failed to peek closing byte.");
                 input_failed = true;
@@ -775,75 +815,93 @@ namespace esphome
             }
         }
 
-        void BalboaSpa::process_message(){
+        void BalboaSpa::process_message()
+        {
             size_t length = (size_t)(input_buffer[0]);
             uint8_t found_client_id = input_buffer[1];
             uint8_t found_msg_type = input_buffer[3];
             uint8_t found_crc = input_buffer[length - 1];
-            
+
             const MessageBase *base = reinterpret_cast<const MessageBase *>(input_buffer);
-            if(found_client_id == client_id){
+            if (found_client_id == client_id)
+            {
                 input_buffer[1] = 0xFF;
                 switch (base->_messageType)
                 {
-                    case msConfigResponse: {
-                        if (!check_msg_length<ConfigResponseMessage>(input_buffer, "ConfigResponseMessage")) break;
-                        const ConfigResponseMessage *msg = reinterpret_cast<const ConfigResponseMessage *>(input_buffer);
-                        (void)msg;
-                        ESP_LOGV(TAG, "ConfigResponseMessage");
+                case msConfigResponse:
+                {
+                    if (!check_msg_length<ConfigResponseMessage>(input_buffer, "ConfigResponseMessage"))
                         break;
-                    }
-                    case msFilterConfig: {
-                        if (!check_msg_length<FilterStatusMessage>(input_buffer, "FilterStatusMessage")) break;
-                        const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
-                        ESP_LOGV(TAG, "FilterStatusMessage");
-                        decodeFilterSettings(msg);
-                        break;
-                    }
-                    case msControlConfig2: {
-                        if (!check_msg_length<ControlConfig2Response>(input_buffer, "ControlConfig2Response")) break;
-                        ESP_LOGV(TAG, "ControlConfig2Response");
-                        const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
-                        decodeSettings(msg);
-                        break;
-                    }
-                    default:
-                        if(found_msg_type == 0x06){
-                            send_message();
-                        }
-                        else if (found_msg_type == 0x28)
-                        {
-                            decodeFault();
-                        } else{
-                            ESP_LOGD(TAG, "Unhandled client_id targeted message type: " MSGTYPE_FMT, MSGTYPE_ARGS(base->_messageType));
-                        }
-                        break;
+                    const ConfigResponseMessage *msg = reinterpret_cast<const ConfigResponseMessage *>(input_buffer);
+                    (void)msg;
+                    ESP_LOGV(TAG, "ConfigResponseMessage");
+                    break;
                 }
-            } else if(found_client_id == 0xFF){
+                case msFilterConfig:
+                {
+                    if (!check_msg_length<FilterStatusMessage>(input_buffer, "FilterStatusMessage"))
+                        break;
+                    const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
+                    ESP_LOGV(TAG, "FilterStatusMessage");
+                    decodeFilterSettings(msg);
+                    break;
+                }
+                case msControlConfig2:
+                {
+                    if (!check_msg_length<ControlConfig2Response>(input_buffer, "ControlConfig2Response"))
+                        break;
+                    ESP_LOGV(TAG, "ControlConfig2Response");
+                    const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
+                    decodeSettings(msg);
+                    break;
+                }
+                default:
+                    if (found_msg_type == 0x06)
+                    {
+                        send_message();
+                    }
+                    else if (found_msg_type == 0x28)
+                    {
+                        decodeFault();
+                    }
+                    else
+                    {
+                        ESP_LOGD(TAG, "Unhandled client_id targeted message type: " MSGTYPE_FMT, MSGTYPE_ARGS(base->_messageType));
+                    }
+                    break;
+                }
+            }
+            else if (found_client_id == 0xFF)
+            {
                 switch (base->_messageType)
                 {
-                    case msStatus: {
-                        if (!check_msg_length<StatusMessage>(input_buffer, "StatusMessage")) break;
-                        const StatusMessage *msg = reinterpret_cast<const StatusMessage *>(input_buffer);
-                        ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
-                        decodeState(msg);
+                case msStatus:
+                {
+                    if (!check_msg_length<StatusMessage>(input_buffer, "StatusMessage"))
                         break;
-                    }
-                    case msSetTempRange: {
-                        ESP_LOGV(TAG, "SetTempRangeMessage");
-                        break;
-                    }
-                    default:
-                        ESP_LOGD(TAG, "Unhandled broadcast message type: " MSGTYPE_FMT, MSGTYPE_ARGS(base->_messageType));
-                        break;
+                    const StatusMessage *msg = reinterpret_cast<const StatusMessage *>(input_buffer);
+                    ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
+                    decodeState(msg);
+                    break;
                 }
-            } else if(found_client_id == 0xFE){
-                if(client_id == 0){
-                    establish_id(); 
+                case msSetTempRange:
+                {
+                    ESP_LOGV(TAG, "SetTempRangeMessage");
+                    break;
+                }
+                default:
+                    ESP_LOGD(TAG, "Unhandled broadcast message type: " MSGTYPE_FMT, MSGTYPE_ARGS(base->_messageType));
+                    break;
+                }
+            }
+            else if (found_client_id == 0xFE)
+            {
+                if (client_id == 0)
+                {
+                    establish_id();
                 }
             }
         }
-
 
         template <typename T>
         void BalboaSpa::send_typed(T &msg)
@@ -917,7 +975,7 @@ namespace esphome
                     {
                         sent.retry_count++;
                         sent.available_at = millis() + RETRY_BACKOFF_MS;
-                        insert_cmd(sent);  // rebuilds automatically
+                        insert_cmd(sent); // rebuilds automatically
                     }
                     else
                     {
@@ -977,7 +1035,6 @@ namespace esphome
             flush();
         }
 
-
         void BalboaSpa::decodeSettings(const ControlConfig2Response *msg)
         {
             if (!update_if_changed(last_settings_message_, has_last_settings_message_, msg))
@@ -1007,17 +1064,17 @@ namespace esphome
 
             TEMP_SCALE new_temp_scale = static_cast<TEMP_SCALE>(msg->_tempScaleCelsius);
             CLOCK_MODE new_clock_mode_24hr = static_cast<CLOCK_MODE>(msg->_24hrTime);
-            if(new_temp_scale != spa_temp_scale || new_clock_mode_24hr != clock_mode_24hr){
+            if (new_temp_scale != spa_temp_scale || new_clock_mode_24hr != clock_mode_24hr)
+            {
                 ESP_LOGD(TAG, "Spa/config changed: temperature_scale %d->%d clock_mode_24hr %d->%d (from status)",
                          (int)spa_temp_scale, (int)new_temp_scale, (int)clock_mode_24hr, (int)new_clock_mode_24hr);
                 spa_temp_scale = new_temp_scale;
                 clock_mode_24hr = new_clock_mode_24hr;
             }
             SpaState newState(*msg, spa_temp_scale);
-            
+
             ESP_LOGI(TAG, "Spa/status received: current_temp=%f set_temp=%f rest_mode=%d highrange=%d",
                      newState.current_temp, newState.target_temp, (int)newState.rest_mode, newState.highrange & 0x1);
-
 
             if (std::isnan(newState.target_temp))
                 ESP_LOGW(TAG, "Spa/temperature/target INVALID (raw %d)", msg->_setTemp);

@@ -33,26 +33,28 @@ namespace esphome
             // Celsius values are doubled in the API, so divide by 2.
             static float convert_raw_temp(uint8_t raw, TEMP_SCALE spa_scale)
             {
-                if (spa_scale == TEMP_SCALE::C) return raw / 2.0f;
-                if (spa_scale == TEMP_SCALE::F) return (float)raw;
+                if (spa_scale == TEMP_SCALE::C)
+                    return raw / 2.0f;
+                if (spa_scale == TEMP_SCALE::F)
+                    return (float)raw;
                 return NAN;
             }
 
             SpaState(const StatusMessage &msg, TEMP_SCALE spa_scale)
             {
-                hour    = msg._hour;
+                hour = msg._hour;
                 minutes = msg._minute;
-                rest_mode  = static_cast<HeatingMode>(msg._heatingMode);
+                rest_mode = static_cast<HeatingMode>(msg._heatingMode);
                 heat_state = msg._heating;
-                highrange  = msg._tempRange;
+                highrange = msg._tempRange;
                 jets[0] = msg._pump1;
                 jets[1] = msg._pump2;
                 jets[2] = msg._pump3;
                 jets[3] = msg._pump4;
-                circulation   = msg._circPump;
-                blower        = msg._blower;
-                lights[0]     = (msg._light1 == 3) ? 1 : 0;
-                lights[1]     = msg._light2;
+                circulation = msg._circPump;
+                blower = msg._blower;
+                lights[0] = (msg._light1 == 3) ? 1 : 0;
+                lights[1] = msg._light2;
                 cleanup_cycle = (msg._cleanupCycle == CleanupCycle::ACTIVE) ? 1 : 0;
                 reminder = msg._reminder;
 
@@ -62,8 +64,8 @@ namespace esphome
                     float t = convert_raw_temp(msg._currentTemp, spa_scale);
                     if (!std::isnan(t) &&
                         (spa_scale == TEMP_SCALE::C
-                            ? t <= HIGHRANGE_MAX_TEMP_C + TEMP_SANITY_OFFSET_C
-                            : t <= HIGHRANGE_MAX_TEMP_F + TEMP_SANITY_OFFSET_F))
+                             ? t <= HIGHRANGE_MAX_TEMP_C + TEMP_SANITY_OFFSET_C
+                             : t <= HIGHRANGE_MAX_TEMP_F + TEMP_SANITY_OFFSET_F))
                         current_temp = t;
                 }
 
@@ -74,9 +76,10 @@ namespace esphome
                     if (!std::isnan(t))
                     {
                         bool ok = (spa_scale == TEMP_SCALE::C)
-                            ? (t >= LOWRANGE_MIN_TEMP_C && t <= HIGHRANGE_MAX_TEMP_C)
-                            : (t >= LOWRANGE_MIN_TEMP_F && t <= HIGHRANGE_MAX_TEMP_F);
-                        if (ok) target_temp = t;
+                                      ? (t >= LOWRANGE_MIN_TEMP_C && t <= HIGHRANGE_MAX_TEMP_C)
+                                      : (t >= LOWRANGE_MIN_TEMP_F && t <= HIGHRANGE_MAX_TEMP_F);
+                        if (ok)
+                            target_temp = t;
                     }
                 }
             }

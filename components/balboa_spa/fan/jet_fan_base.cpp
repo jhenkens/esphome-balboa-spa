@@ -50,7 +50,8 @@ namespace esphome
         void JetFanBase::set_parent(BalboaSpa *parent)
         {
             JetToggleComponentBase::set_parent(parent);
-            parent->register_listener([this]() { this->update(); });
+            parent->register_listener([this]()
+                                      { this->update(); });
         }
 
         void JetFanBase::control(const fan::FanCall &call)

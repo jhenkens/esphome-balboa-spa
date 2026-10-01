@@ -1,7 +1,8 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import button
-from .. import balboa_spa_ns, BalboaSpa, CONF_SPA_ID
+
+from .. import CONF_SPA_ID, BalboaSpa, balboa_spa_ns
 
 DEPENDENCIES = ["balboa_spa"]
 
@@ -16,14 +17,19 @@ CONF_REQUEST_FAULT_LOG = "request_fault_log"
 CONF_CLEAR_REMINDER = "clear_reminder"
 CONF_RECONNECT = "reconnect"
 
-CONFIG_SCHEMA = cv.Schema({
-    cv.GenerateID(CONF_SPA_ID): cv.use_id(BalboaSpa),
-    cv.Optional(CONF_SYNC_TIME): button.button_schema(SyncTimeButton),
-    cv.Optional(CONF_DISABLE_FILTER2): button.button_schema(DisableFilter2Button),
-    cv.Optional(CONF_REQUEST_FAULT_LOG): button.button_schema(RequestFaultLogButton),
-    cv.Optional(CONF_CLEAR_REMINDER): button.button_schema(ClearReminderButton),
-    cv.Optional(CONF_RECONNECT): button.button_schema(ReconnectButton),
-})
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(CONF_SPA_ID): cv.use_id(BalboaSpa),
+        cv.Optional(CONF_SYNC_TIME): button.button_schema(SyncTimeButton),
+        cv.Optional(CONF_DISABLE_FILTER2): button.button_schema(DisableFilter2Button),
+        cv.Optional(CONF_REQUEST_FAULT_LOG): button.button_schema(
+            RequestFaultLogButton
+        ),
+        cv.Optional(CONF_CLEAR_REMINDER): button.button_schema(ClearReminderButton),
+        cv.Optional(CONF_RECONNECT): button.button_schema(ReconnectButton),
+    }
+)
+
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_SPA_ID])

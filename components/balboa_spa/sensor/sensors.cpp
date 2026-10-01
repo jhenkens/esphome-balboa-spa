@@ -78,5 +78,5 @@ namespace esphome
             if (this->state != sensor_state_value)
                 this->publish_state(sensor_state_value);
         }
-    }
-}
+    } // namespace balboa_spa
+} // namespace esphome

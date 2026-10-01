@@ -4,14 +4,14 @@
 
 namespace esphome
 {
-  namespace balboa_spa
-  {
-
-    class ComponentVersionTextSensor : public text_sensor::TextSensor
+    namespace balboa_spa
     {
-    public:
-      void set_parent(BalboaSpa *parent);
-    };
 
-  } // namespace balboa_spa
+        class ComponentVersionTextSensor : public text_sensor::TextSensor
+        {
+        public:
+            void set_parent(BalboaSpa *parent);
+        };
+
+    } // namespace balboa_spa
 } // namespace esphome

@@ -1,5 +1,5 @@
 # this configuration file has all empty custom components set up.
-# use 'esphome test_empty.yaml compile' to build. 
+# use 'esphome test_empty.yaml compile' to build.
 
 external_components:
   - source:
@@ -172,7 +172,7 @@ text:
       name: "Set Filter 1 Duration"
       mode: TEXT
     filter2_start_time:
-      name: "Set Filter 2 Start Time"  
+      name: "Set Filter 2 Start Time"
       mode: TEXT
     filter2_duration:
       name: "Set Filter 2 Duration"

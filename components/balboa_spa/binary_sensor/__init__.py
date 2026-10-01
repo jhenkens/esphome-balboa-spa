@@ -1,20 +1,15 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
-
-from .. import (
-    balboa_spa_ns,
-    BalboaSpa,
-    CONF_SPA_ID
-)
-
 from esphome.const import (
     DEVICE_CLASS_CONNECTIVITY,
-    DEVICE_CLASS_PROBLEM,
-    ENTITY_CATEGORY_DIAGNOSTIC,
     DEVICE_CLASS_POWER,
-    DEVICE_CLASS_RUNNING
+    DEVICE_CLASS_PROBLEM,
+    DEVICE_CLASS_RUNNING,
+    ENTITY_CATEGORY_DIAGNOSTIC,
 )
+
+from .. import CONF_SPA_ID, BalboaSpa, balboa_spa_ns
 
 DEPENDENCIES = ["balboa_spa"]
 
@@ -38,67 +33,74 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_BLOWER): binary_sensor.binary_sensor_schema(
             SpaSensor,
             device_class=DEVICE_CLASS_POWER,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
         cv.Optional(CONF_HIGH_RANGE): binary_sensor.binary_sensor_schema(
-            SpaSensor,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            SpaSensor, entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
         cv.Optional(CONF_CIRCULATION): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:pump",
             device_class=DEVICE_CLASS_RUNNING,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
         cv.Optional(CONF_REST_MODE): binary_sensor.binary_sensor_schema(
-            SpaSensor,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            SpaSensor, entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
         cv.Optional(CONF_HEAT_STATE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             device_class=DEVICE_CLASS_POWER,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon="mdi:fire"
+            icon="mdi:fire",
         ),
         cv.Optional(CONF_CONNECTED): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:lan-connect",
             device_class=DEVICE_CLASS_CONNECTIVITY,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
         cv.Optional(CONF_FILTER1_WINDOW_ACTIVE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:air-filter",
             device_class=DEVICE_CLASS_RUNNING,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
         cv.Optional(CONF_FILTER2_WINDOW_ACTIVE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:air-filter",
             device_class=DEVICE_CLASS_RUNNING,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
         cv.Optional(CONF_CLEANUP_CYCLE): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:vacuum",
             device_class=DEVICE_CLASS_RUNNING,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
         cv.Optional(CONF_TIME_SYNCED): binary_sensor.binary_sensor_schema(
             SpaSensor,
             icon="mdi:clock-check",
             device_class=DEVICE_CLASS_PROBLEM,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
-    })
+    }
+)
+
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_SPA_ID])
 
     sensor_types = [
-        CONF_BLOWER, CONF_HIGH_RANGE, CONF_CIRCULATION, CONF_REST_MODE,
-        CONF_HEAT_STATE, CONF_CONNECTED, CONF_FILTER1_WINDOW_ACTIVE,
-        CONF_FILTER2_WINDOW_ACTIVE, CONF_CLEANUP_CYCLE, CONF_TIME_SYNCED
+        CONF_BLOWER,
+        CONF_HIGH_RANGE,
+        CONF_CIRCULATION,
+        CONF_REST_MODE,
+        CONF_HEAT_STATE,
+        CONF_CONNECTED,
+        CONF_FILTER1_WINDOW_ACTIVE,
+        CONF_FILTER2_WINDOW_ACTIVE,
+        CONF_CLEANUP_CYCLE,
+        CONF_TIME_SYNCED,
     ]
     for sensor_type in sensor_types:
         if conf := config.get(sensor_type):

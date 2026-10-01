@@ -29,7 +29,7 @@ namespace esphome
 
             // Set the spa time
             spa_->set_time(time_info->tm_hour, time_info->tm_min);
-            
+
             // Request spa settings update to refresh the display
             spa_->request_config_update();
         }
