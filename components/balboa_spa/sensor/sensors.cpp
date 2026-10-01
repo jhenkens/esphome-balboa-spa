@@ -10,8 +10,7 @@ namespace esphome
 
         void BalboaSpaSensors::set_parent(BalboaSpa *parent)
         {
-            //spa_temp_init(parent, false, this->get_unit_of_measurement_ref().compare("°F") == 0 ? TEMP_SCALE::F : TEMP_SCALE::UNKNOWN);
-            spa_temp_init(parent, false, TEMP_SCALE::UNKNOWN);
+            spa_temp_init(parent, false, this->get_unit_of_measurement_ref().compare("°F") == 0 ? TEMP_SCALE::F : TEMP_SCALE::UNKNOWN);
         }
 
         void BalboaSpaSensors::update()
