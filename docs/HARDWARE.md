@@ -54,13 +54,11 @@ This matches the UART settings already used in the [Sample Config](../README.md#
 
 The following was documented by a member of the [r/hottub](https://old.reddit.com/r/hottub/) community for a **Balboa B21 pack** with a **BP6013G2** or **JZ6013X1** board. It may not apply to every Balboa board revision, but is a useful starting point if your connectors are labeled `J34`/`J35`. Many Balboa boards come with a Y-Connector already inline between the board and the control panel — you can use the unused part of that Y-Connector.
 
-- Connector pin numbering (clip at the top, **viewed from the wire side while plugged into the board** — i.e. the wire bundle is coming toward you): `4 - 3` / `2 - 1`.
-- Reported wiring, same wire-side view: `DC = pin 1 (yellow)`, `A/B pair = pins 2 & 3 (both black; mark one)`, `G = pin 4 (red)`. This lines up with the official pinout above on pins 1 (supply) and 4 (return), but the community report has `B` on pin 3 and `A` on pin 2 — the reverse of the official table. RS-485 A/B labeling is notoriously inconsistent between manufacturers, so **don't assume either source has your board's A/B assignment right**.
 - Power connector: an ATX 4-pin Molex MicroFit — see [Recommended hardware](#recommended-hardware-current-build) above for a link and sizing note.
 
 <img src="images/molex-connector-pinout.svg" alt="Diagram of the 4-pin Molex plug face with pin numbering and signal legend" width="500">
 
-*Pin numbering on the loose plug (not the board-mounted socket), viewed looking straight into the exposed pin face with the clip up and the wire bundle exiting the back, away from you: pins 3 and 4 on top, 1 and 2 on the bottom. This is the mirror image (left-right) of the wire-side numbering above, since it's the opposite face of the same connector.*
+*Pin numbering on the loose plug (not the board-mounted socket), viewed looking straight into the exposed pin face with the clip up and the wire bundle exiting the back, away from you: pins 3 and 4 on top, 1 and 2 on the bottom.*
 
 **Before connecting anything:**
 1. With the spa pack **powered on**, use a voltmeter to confirm which two pins are actually +VDC (pin 1) and GND/return (pin 4) on your specific board. Don't rely on wire color alone — colors aren't guaranteed consistent across board revisions, and swapping supply and return can damage your adapter.
