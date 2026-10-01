@@ -158,6 +158,10 @@ button:
       name: "Request Fault Log"
     clear_reminder:
       name: "Clear Reminder"
+    request_filter_settings:
+      name: "Request Filter Settings"
+    request_config:
+      name: "Request Config"
 
 text:
   - platform: balboa_spa

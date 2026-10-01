@@ -320,6 +320,8 @@ Enables/disables the secondary filter cycle. Turning ON requires filter 2 start 
 | `sync_time` | Synchronise spa clock with ESPHome system time |
 | `reconnect` | Drop and re-establish the spa connection |
 | `request_fault_log` | Refresh fault data on demand (also fetched automatically on startup) |
+| `request_filter_settings` | Re-read the filter schedule on demand (also refreshed automatically every 5 minutes) |
+| `request_config` | Re-read the spa hardware configuration on demand (also fetched automatically on startup) |
 | `disable_filter2` | Disable the filter 2 schedule |
 | `clear_reminder` | Acknowledge and clear the active maintenance reminder |
 

@@ -11,11 +11,17 @@ DisableFilter2Button = balboa_spa_ns.class_("DisableFilter2Button", button.Butto
 RequestFaultLogButton = balboa_spa_ns.class_("RequestFaultLogButton", button.Button)
 ClearReminderButton = balboa_spa_ns.class_("ClearReminderButton", button.Button)
 ReconnectButton = balboa_spa_ns.class_("ReconnectButton", button.Button)
+RequestFilterSettingsButton = balboa_spa_ns.class_(
+    "RequestFilterSettingsButton", button.Button
+)
+RequestConfigButton = balboa_spa_ns.class_("RequestConfigButton", button.Button)
 CONF_SYNC_TIME = "sync_time"
 CONF_DISABLE_FILTER2 = "disable_filter2"
 CONF_REQUEST_FAULT_LOG = "request_fault_log"
 CONF_CLEAR_REMINDER = "clear_reminder"
 CONF_RECONNECT = "reconnect"
+CONF_REQUEST_FILTER_SETTINGS = "request_filter_settings"
+CONF_REQUEST_CONFIG = "request_config"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -27,6 +33,10 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_CLEAR_REMINDER): button.button_schema(ClearReminderButton),
         cv.Optional(CONF_RECONNECT): button.button_schema(ReconnectButton),
+        cv.Optional(CONF_REQUEST_FILTER_SETTINGS): button.button_schema(
+            RequestFilterSettingsButton
+        ),
+        cv.Optional(CONF_REQUEST_CONFIG): button.button_schema(RequestConfigButton),
     }
 )
 
@@ -46,5 +56,11 @@ async def to_code(config):
         var = await button.new_button(conf)
         cg.add(var.set_parent(parent))
     if conf := config.get(CONF_RECONNECT):
+        var = await button.new_button(conf)
+        cg.add(var.set_parent(parent))
+    if conf := config.get(CONF_REQUEST_FILTER_SETTINGS):
+        var = await button.new_button(conf)
+        cg.add(var.set_parent(parent))
+    if conf := config.get(CONF_REQUEST_CONFIG):
         var = await button.new_button(conf)
         cg.add(var.set_parent(parent))
