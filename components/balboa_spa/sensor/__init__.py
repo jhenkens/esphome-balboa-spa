@@ -8,6 +8,10 @@ from .. import (
     CONF_SPA_ID
 )
 
+from esphome.const import (
+    DEVICE_CLASS_TEMPERATURE,
+)
+
 DEPENDENCIES = ["balboa_spa"]
 
 SpaSensor = balboa_spa_ns.class_("BalboaSpaSensors", sensor.Sensor)
@@ -35,24 +39,33 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(CONF_SPA_ID): cv.use_id(BalboaSpa),
         cv.Optional(CONF_BLOWER): sensor.sensor_schema(
             SpaSensor,
+            icon="mdi:fan",
         ),
         cv.Optional(CONF_HIGHRANGE): sensor.sensor_schema(
             SpaSensor,
+            icon="mdi:thermometer-lines",
         ),
         cv.Optional(CONF_CIRCULATION): sensor.sensor_schema(
             SpaSensor,
+            icon="mdi:pump",
         ),
         cv.Optional(CONF_RESTMODE): sensor.sensor_schema(
             SpaSensor,
+            icon="mdi:sleep",
         ),
         cv.Optional(CONF_HEATSTATE): sensor.sensor_schema(
             SpaSensor,
+            icon="mdi:fire",
         ),
         cv.Optional(CONF_CURRENT_TEMP): sensor.sensor_schema(
             SpaSensor,
+            device_class=DEVICE_CLASS_TEMPERATURE,
+            icon="mdi:thermometer",
         ),
         cv.Optional(CONF_TARGET_TEMP): sensor.sensor_schema(
             SpaSensor,
+            device_class=DEVICE_CLASS_TEMPERATURE,
+            icon="mdi:thermometer",
         ),
         cv.Optional(CONF_SPA_TEMP_SCALE): sensor.sensor_schema(
             SpaSensor,
@@ -67,15 +80,19 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_FAULT_CODE): sensor.sensor_schema(
             SpaFaultLogSensor,
+            icon="mdi:alert-circle",
         ),
         cv.Optional(CONF_FAULT_TOTAL_ENTRIES): sensor.sensor_schema(
             SpaFaultLogSensor,
+            icon="mdi:format-list-numbered",
         ),
         cv.Optional(CONF_FAULT_CURRENT_ENTRY): sensor.sensor_schema(
             SpaFaultLogSensor,
+            icon="mdi:format-list-numbered",
         ),
         cv.Optional(CONF_FAULT_DAYS_AGO): sensor.sensor_schema(
             SpaFaultLogSensor,
+            icon="mdi:calendar-clock",
         ),
     })
 

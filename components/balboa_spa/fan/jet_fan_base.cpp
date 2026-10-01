@@ -11,7 +11,7 @@ namespace esphome
 
         void JetFanBase::update()
         {
-            const SpaState *spaState = spa->get_current_state();
+            const SpaState *spaState = spa_->get_current_state();
             this->sync_from_spa(
                 spaState,
                 current_fan_state,

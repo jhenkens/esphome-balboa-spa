@@ -29,6 +29,19 @@ namespace esphome
             return true;
         }
 
+        // FaultLog isn't a fixed-size struct like the other message types (decodeFault()
+        // reads directly from input_buffer), so it gets its own length check rather than
+        // check_msg_length<T>(), but follows the same "validate shape before anything else" shape.
+        static bool check_fault_length(const uint8_t *buf)
+        {
+            if (buf[0] < 10)
+            {
+                ESP_LOGW(TAG, "FaultLog message too short: got %d bytes, need 10", buf[0]);
+                return false;
+            }
+            return true;
+        }
+
         // Protocol byte indices for status update (0x13) message
         void BalboaSpa::setup()
         {
@@ -489,6 +502,12 @@ namespace esphome
         {
             if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
             {
+                if (spaState.hour == hour && spaState.minutes == minute)
+                {
+                    ESP_LOGV(TAG, "Skipping redundant time update to %02d:%02d", hour, minute);
+                    return;
+                }
+
                 target_hour = hour;
                 target_minute = minute;
                 PendingCmd time_cmd;
@@ -775,28 +794,24 @@ namespace esphome
                         break;
                     }
                     case msFilterConfig: {
-                        if(last_filter_crc != found_crc){
                         if (!check_msg_length<FilterStatusMessage>(input_buffer, "FilterStatusMessage")) break;
-                            const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
-                            ESP_LOGV(TAG, "FilterStatusMessage");
-                            decodeFilterSettings(msg);
-                        }
+                        const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
+                        ESP_LOGV(TAG, "FilterStatusMessage");
+                        decodeFilterSettings(msg);
                         break;
                     }
                     case msControlConfig2: {
                         if (!check_msg_length<ControlConfig2Response>(input_buffer, "ControlConfig2Response")) break;
                         ESP_LOGV(TAG, "ControlConfig2Response");
-                        if(last_settings_crc != found_crc){
-                            const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
-                            decodeSettings(msg);
-                        }
+                        const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
+                        decodeSettings(msg);
                         break;
                     }
                     default:
-                        if(found_msg_type == 0x06){ 
+                        if(found_msg_type == 0x06){
                             send_message();
                         }
-                        else if (found_msg_type == 0x28 && last_fault_crc != found_crc)
+                        else if (found_msg_type == 0x28)
                         {
                             decodeFault();
                         } else{
@@ -810,10 +825,8 @@ namespace esphome
                     case msStatus: {
                         if (!check_msg_length<StatusMessage>(input_buffer, "StatusMessage")) break;
                         const StatusMessage *msg = reinterpret_cast<const StatusMessage *>(input_buffer);
-                        if(last_state_crc != msg->_suffix._check){
-                            ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
-                            decodeState(msg);
-                        }
+                        ESP_LOGV(TAG, "StatusMessage: currentTemp=%d setTemp=%d", msg->_currentTemp, msg->_setTemp);
+                        decodeState(msg);
                         break;
                     }
                     case msSetTempRange: {
@@ -845,7 +858,7 @@ namespace esphome
             uint32_t now_cts = millis();
             if (last_cts_time > 0)
             {
-                ESP_LOGV(TAG, "CTS interval: %u ms", now_cts - last_cts_time);
+                ESP_LOGV(TAG, "CTS interval: %lu ms", now_cts - last_cts_time);
             }
             last_cts_time = now_cts;
 
@@ -967,6 +980,12 @@ namespace esphome
 
         void BalboaSpa::decodeSettings(const ControlConfig2Response *msg)
         {
+            if (!update_if_changed(last_settings_message_, has_last_settings_message_, msg))
+            {
+                ESP_LOGV(TAG, "ControlConfig2Response unchanged; skipping decode");
+                return;
+            }
+
             memcpy(&spaConfig, msg, sizeof(ControlConfig2Response));
             ESP_LOGD(TAG, "Spa/config: pumps=%d/%d/%d/%d/%d/%d lights=%d/%d circ=%d blower=%d mister=%d aux=%d/%d",
                      spaConfig.pump1, spaConfig.pump2, spaConfig.pump3,
@@ -975,11 +994,17 @@ namespace esphome
                      spaConfig.circ, spaConfig.blower, spaConfig.mister,
                      spaConfig.aux1, spaConfig.aux2);
             config_request_status = 2;
-            last_settings_crc = msg->_suffix._check;
         }
 
         void BalboaSpa::decodeState(const StatusMessage *msg)
         {
+            last_status_received_ms_ = millis();
+            if (!update_if_changed(last_status_message_, has_last_status_message_, msg))
+            {
+                ESP_LOGV(TAG, "StatusMessage unchanged; skipping decode");
+                return;
+            }
+
             TEMP_SCALE new_temp_scale = static_cast<TEMP_SCALE>(msg->_tempScaleCelsius);
             CLOCK_MODE new_clock_mode_24hr = static_cast<CLOCK_MODE>(msg->_24hrTime);
             if(new_temp_scale != spa_temp_scale || new_clock_mode_24hr != clock_mode_24hr){
@@ -1004,13 +1029,16 @@ namespace esphome
 
             spaState = newState;
             prune_and_rebuild();
-
-            last_state_crc = msg->_suffix._check;
-            last_status_received_ms_ = millis();
         }
 
         void BalboaSpa::decodeFilterSettings(const FilterStatusMessage *msg)
         {
+            if (!update_if_changed(last_filter_message_, has_last_filter_message_, msg))
+            {
+                ESP_LOGV(TAG, "FilterStatusMessage unchanged; skipping decode");
+                return;
+            }
+
             spaFilterSettings.filter1_hour = input_buffer[4];
             spaFilterSettings.filter1_minute = input_buffer[5];
             spaFilterSettings.filter1_duration_hour = input_buffer[6];
@@ -1043,18 +1071,20 @@ namespace esphome
             {
                 filter_listener(&spaFilterSettings);
             }
-
-            last_filter_crc = input_buffer[input_buffer[0] - 1];
         }
 
         void BalboaSpa::decodeFault()
         {
             // Accesses up to input_buffer[9] — require at least 10 bytes.
-            if (input_buffer[0] < 10)
+            if (!check_fault_length(input_buffer))
+                return;
+
+            if (!update_if_changed(last_fault_payload_, last_fault_length_, has_last_fault_message_, input_buffer, input_buffer[0]))
             {
-                ESP_LOGW(TAG, "FaultLog message too short: got %d bytes, need 10", input_buffer[0]);
+                ESP_LOGV(TAG, "FaultLog unchanged; skipping decode");
                 return;
             }
+
             spaFaultLog.total_entries = input_buffer[4];
             spaFaultLog.current_entry = input_buffer[5];
             spaFaultLog.fault_code = input_buffer[6];
@@ -1139,8 +1169,6 @@ namespace esphome
             {
                 listener(&spaFaultLog);
             }
-
-            last_fault_crc = input_buffer[input_buffer[0] - 1];
         }
 
         bool BalboaSpa::is_communicating()

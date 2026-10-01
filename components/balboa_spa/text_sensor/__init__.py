@@ -24,14 +24,14 @@ CONF_CLIENT_ID = "client_id"
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(CONF_SPA_ID): cv.use_id(BalboaSpa),
-    cv.Optional(CONF_SPA_TIME): text_sensor.text_sensor_schema(SpaTimeTextSensor),
-    cv.Optional(CONF_FILTER1_CONFIG): text_sensor.text_sensor_schema(SpaFilter1ConfigTextSensor),
-    cv.Optional(CONF_FILTER2_CONFIG): text_sensor.text_sensor_schema(SpaFilter2ConfigTextSensor),
-    cv.Optional(CONF_FAULT_MESSAGE): text_sensor.text_sensor_schema(FaultMessageTextSensor),
-    cv.Optional(CONF_FAULT_LOG_TIME): text_sensor.text_sensor_schema(FaultLogTimeTextSensor),
-    cv.Optional(CONF_REMINDER): text_sensor.text_sensor_schema(ReminderTextSensor),
-    cv.Optional(CONF_COMPONENT_VERSION): text_sensor.text_sensor_schema(ComponentVersionTextSensor),
-    cv.Optional(CONF_CLIENT_ID): text_sensor.text_sensor_schema(ClientIdTextSensor),
+    cv.Optional(CONF_SPA_TIME): text_sensor.text_sensor_schema(SpaTimeTextSensor, icon="mdi:clock"),
+    cv.Optional(CONF_FILTER1_CONFIG): text_sensor.text_sensor_schema(SpaFilter1ConfigTextSensor, icon="mdi:air-filter"),
+    cv.Optional(CONF_FILTER2_CONFIG): text_sensor.text_sensor_schema(SpaFilter2ConfigTextSensor, icon="mdi:air-filter"),
+    cv.Optional(CONF_FAULT_MESSAGE): text_sensor.text_sensor_schema(FaultMessageTextSensor, icon="mdi:alert-circle"),
+    cv.Optional(CONF_FAULT_LOG_TIME): text_sensor.text_sensor_schema(FaultLogTimeTextSensor, icon="mdi:calendar-clock"),
+    cv.Optional(CONF_REMINDER): text_sensor.text_sensor_schema(ReminderTextSensor, icon="mdi:bell"),
+    cv.Optional(CONF_COMPONENT_VERSION): text_sensor.text_sensor_schema(ComponentVersionTextSensor, icon="mdi:information"),
+    cv.Optional(CONF_CLIENT_ID): text_sensor.text_sensor_schema(ClientIdTextSensor, icon="mdi:account"),
 })
 
 async def to_code(config):

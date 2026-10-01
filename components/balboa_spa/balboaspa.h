@@ -117,10 +117,15 @@ namespace esphome
             }
             uint8_t output_buffer[BUFFER_LENGTH];
             uint8_t received_byte, loop_index, temp_index;
-            uint8_t last_state_crc = 0x00;
-            uint8_t last_settings_crc = 0x00;
-            uint8_t last_filter_crc = 0x00;
-            uint8_t last_fault_crc = 0x00;
+            uint8_t last_status_message_[sizeof(StatusMessage)] = {};
+            bool has_last_status_message_ = false;
+            uint8_t last_settings_message_[sizeof(ControlConfig2Response)] = {};
+            bool has_last_settings_message_ = false;
+            uint8_t last_filter_message_[sizeof(FilterStatusMessage)] = {};
+            bool has_last_filter_message_ = false;
+            uint8_t last_fault_payload_[BUFFER_LENGTH] = {};
+            size_t last_fault_length_ = 0;
+            bool has_last_fault_message_ = false;
             // Command queue — sorted linear array, insertion-sorted by available_at
             enum class CmdType : uint8_t
             {
@@ -252,6 +257,25 @@ namespace esphome
             void decodeState(const StatusMessage *msg);
             void decodeFilterSettings(const FilterStatusMessage *msg);
             void decodeFault();
+
+            template <size_t N>
+            bool update_if_changed(uint8_t (&last_buf)[N], bool &has_last, const void *msg)
+            {
+                if (has_last && memcmp(last_buf, msg, N) == 0)
+                    return false;
+                memcpy(last_buf, msg, N);
+                has_last = true;
+                return true;
+            }
+            bool update_if_changed(uint8_t *last_buf, size_t &last_len, bool &has_last, const void *data, size_t len)
+            {
+                if (has_last && last_len == len && memcmp(last_buf, data, len) == 0)
+                    return false;
+                memcpy(last_buf, data, len);
+                last_len = len;
+                has_last = true;
+                return true;
+            }
         };
 
     } // namespace balboa_spa
