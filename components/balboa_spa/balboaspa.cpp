@@ -29,6 +29,19 @@ namespace esphome
             return true;
         }
 
+        // FaultLog isn't a fixed-size struct like the other message types (decodeFault()
+        // reads directly from input_buffer), so it gets its own length check rather than
+        // check_msg_length<T>(), but follows the same "validate shape before anything else" shape.
+        static bool check_fault_length(const uint8_t *buf)
+        {
+            if (buf[0] < 10)
+            {
+                ESP_LOGW(TAG, "FaultLog message too short: got %d bytes, need 10", buf[0]);
+                return false;
+            }
+            return true;
+        }
+
         // Protocol byte indices for status update (0x13) message
         void BalboaSpa::setup()
         {
@@ -800,7 +813,8 @@ namespace esphome
                         if(found_msg_type == 0x06){ 
                             send_message();
                         }
-                        else if (found_msg_type == 0x28 && !is_duplicate_fault_payload(input_buffer, length))
+                        else if (found_msg_type == 0x28 && check_fault_length(input_buffer) &&
+                                 update_if_changed(last_fault_payload_, last_fault_length_, has_last_fault_message_, input_buffer, length))
                         {
                             decodeFault();
                         } else{
@@ -1053,12 +1067,8 @@ namespace esphome
 
         void BalboaSpa::decodeFault()
         {
-            // Accesses up to input_buffer[9] — require at least 10 bytes.
-            if (input_buffer[0] < 10)
-            {
-                ESP_LOGW(TAG, "FaultLog message too short: got %d bytes, need 10", input_buffer[0]);
-                return;
-            }
+            // Accesses up to input_buffer[9]; check_fault_length() at the call site
+            // already guarantees at least 10 bytes before we get here.
             spaFaultLog.total_entries = input_buffer[4];
             spaFaultLog.current_entry = input_buffer[5];
             spaFaultLog.fault_code = input_buffer[6];
@@ -1143,10 +1153,6 @@ namespace esphome
             {
                 listener(&spaFaultLog);
             }
-
-            last_fault_length_ = input_buffer[0];
-            memcpy(last_fault_payload_, input_buffer, last_fault_length_);
-            has_last_fault_message_ = true;
         }
 
         bool BalboaSpa::is_communicating()
