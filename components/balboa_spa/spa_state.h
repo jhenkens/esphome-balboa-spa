@@ -64,8 +64,8 @@ namespace esphome
                     float t = convert_raw_temp(msg._currentTemp, spa_scale);
                     if (!std::isnan(t) &&
                         (spa_scale == TEMP_SCALE::C
-                             ? t <= HIGHRANGE_MAX_TEMP_C + TEMP_SANITY_OFFSET_C
-                             : t <= HIGHRANGE_MAX_TEMP_F + TEMP_SANITY_OFFSET_F))
+                             ? (t >= CURRENT_TEMP_MIN_C && t <= CURRENT_TEMP_MAX_C)
+                             : (t >= CURRENT_TEMP_MIN_F && t <= CURRENT_TEMP_MAX_F)))
                         current_temp = t;
                 }
 
