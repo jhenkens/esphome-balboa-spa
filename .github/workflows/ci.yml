@@ -16,6 +16,20 @@ on:
         type: string
 
 jobs:
+ lint:
+    name: Lint and formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+
  ci:
     name: Building test firmware
     runs-on: ubuntu-latest
