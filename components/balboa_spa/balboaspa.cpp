@@ -738,7 +738,10 @@ namespace esphome
                         input_failed = true;
                         return true;
                     }
-                    if (received_length < 2)
+                    // 5 is the shortest valid frame: length, client id, 0xBF, message
+                    // type and CRC. Anything shorter would leave process_message()
+                    // reading stale bytes for the message type.
+                    if (received_length < 5)
                     {
                         ESP_LOGV(TAG, "Invalid length byte %d — discarding", received_length);
                         input_failed = true;
