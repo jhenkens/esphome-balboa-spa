@@ -359,7 +359,7 @@ Fault sensors are split across the `sensor:` and `text_sensor:` platforms — se
 
 ### Reminders
 
-The `reminder` text sensor reports maintenance reminders from the spa: `None`, `Clean Filter`, `Check pH`, `Check Sanitizer`, or `Fault`. Use the `clear_reminder` button to acknowledge and clear the active reminder. Unknown codes show as `Unknown (0x##)` — please [open an issue](https://github.com/jhenkens/esphome-balboa-spa/issues/new) with the code and the message shown on your spa panel.
+The `reminder` text sensor reports maintenance reminders from the spa: `None`, `Priming`, `Test GFCI`, `Clean Filter`, `Check pH`, `Check Sanitizer`, or `Fault`. Use the `clear_reminder` button to acknowledge and clear the active reminder. Unknown codes show as `Unknown (0x##)` — please [open an issue](https://github.com/jhenkens/esphome-balboa-spa/issues/new) with the code and the message shown on your spa panel.
 
 ## Troubleshooting
 
