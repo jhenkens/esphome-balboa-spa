@@ -257,6 +257,30 @@ namespace esphome
             void decodeState(const StatusMessage *msg);
             void decodeFilterSettings(const FilterStatusMessage *msg);
             void decodeFault();
+
+            // Shared change-detection helper for the four decode*() dedup checks below.
+            // Returns true (and stores a copy of `msg`) if it differs from the last
+            // message of this kind seen; returns false without touching any state if
+            // it is an exact duplicate of what was already stored.
+            template <size_t N>
+            bool update_if_changed(uint8_t (&last_buf)[N], bool &has_last, const void *msg)
+            {
+                if (has_last && memcmp(last_buf, msg, N) == 0)
+                    return false;
+                memcpy(last_buf, msg, N);
+                has_last = true;
+                return true;
+            }
+            // Fault log payloads are variable-length, and decodeFault() only stores
+            // its own copy once past its "too short" guard (preserving the original
+            // behavior of not remembering a malformed payload), so this is a
+            // non-mutating peek rather than another update_if_changed() overload.
+            // Compares against the previously-stored length rather than assuming it
+            // always matches the incoming message's length.
+            bool is_duplicate_fault_payload(const uint8_t *data, size_t len) const
+            {
+                return has_last_fault_message_ && last_fault_length_ == len && memcmp(last_fault_payload_, data, len) == 0;
+            }
         };
 
     } // namespace balboa_spa

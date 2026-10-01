@@ -784,7 +784,7 @@ namespace esphome
                         if (!check_msg_length<FilterStatusMessage>(input_buffer, "FilterStatusMessage")) break;
                         const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
                         ESP_LOGV(TAG, "FilterStatusMessage");
-                        if (!has_last_filter_message_ || memcmp(last_filter_message_, msg, sizeof(FilterStatusMessage)) != 0)
+                        if (update_if_changed(last_filter_message_, has_last_filter_message_, msg))
                             decodeFilterSettings(msg);
                         break;
                     }
@@ -792,7 +792,7 @@ namespace esphome
                         if (!check_msg_length<ControlConfig2Response>(input_buffer, "ControlConfig2Response")) break;
                         ESP_LOGV(TAG, "ControlConfig2Response");
                         const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
-                        if (!has_last_settings_message_ || memcmp(last_settings_message_, msg, sizeof(ControlConfig2Response)) != 0)
+                        if (update_if_changed(last_settings_message_, has_last_settings_message_, msg))
                             decodeSettings(msg);
                         break;
                     }
@@ -800,7 +800,7 @@ namespace esphome
                         if(found_msg_type == 0x06){ 
                             send_message();
                         }
-                        else if (found_msg_type == 0x28 && (!has_last_fault_message_ || memcmp(last_fault_payload_, input_buffer, length) != 0))
+                        else if (found_msg_type == 0x28 && !is_duplicate_fault_payload(input_buffer, length))
                         {
                             decodeFault();
                         } else{
@@ -977,13 +977,11 @@ namespace esphome
                      spaConfig.circ, spaConfig.blower, spaConfig.mister,
                      spaConfig.aux1, spaConfig.aux2);
             config_request_status = 2;
-            memcpy(last_settings_message_, msg, sizeof(ControlConfig2Response));
-            has_last_settings_message_ = true;
         }
 
         void BalboaSpa::decodeState(const StatusMessage *msg)
         {
-            if (has_last_status_message_ && memcmp(last_status_message_, msg, sizeof(StatusMessage)) == 0)
+            if (!update_if_changed(last_status_message_, has_last_status_message_, msg))
             {
                 ESP_LOGV(TAG, "StatusMessage unchanged; skipping decode");
                 return;
@@ -1014,8 +1012,6 @@ namespace esphome
             spaState = newState;
             prune_and_rebuild();
 
-            memcpy(last_status_message_, msg, sizeof(StatusMessage));
-            has_last_status_message_ = true;
             last_status_received_ms_ = millis();
         }
 
@@ -1053,9 +1049,6 @@ namespace esphome
             {
                 filter_listener(&spaFilterSettings);
             }
-
-            memcpy(last_filter_message_, msg, sizeof(FilterStatusMessage));
-            has_last_filter_message_ = true;
         }
 
         void BalboaSpa::decodeFault()
