@@ -90,14 +90,14 @@ namespace esphome
                 }
             }
 
-            //ESP_LOGV(TAG, "Checking serial for incoming data...");
+            ESP_LOGV(TAG, "Checking serial for incoming data...");
             while (true)
             {
                 if(!read_serial()){
                     break;
                 }
             }
-            //ESP_LOGV(TAG, "Finished processing serial data. Updating sensors if needed...");
+            ESP_LOGV(TAG, "Finished processing serial data. Updating sensors if needed...");
 
             if (used_remembered_client_id_for_session_ && client_id != 0 && !client_id_probe_pending_ &&
                 last_status_received_ms_ != 0 && millis() - client_id_set_at_ms_ >= 60000)

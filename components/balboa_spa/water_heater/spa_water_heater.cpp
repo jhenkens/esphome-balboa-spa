@@ -31,10 +31,7 @@ namespace esphome
             traits_.set_min_temperature(range_min());
             traits_.set_max_temperature(range_max());
             traits_.set_target_temperature_step(temp_step());
-            // Deliberately not calling traits_.set_temperature_unit(): this component
-            // bypasses ESPHome/Home Assistant unit conversion for native °F support
-            // (see docs/ARCHITECTURE.md), and to_display()/to_internal() already hand
-            // back values in the configured unit directly.
+            traits_.set_temperature_unit(is_fahrenheit() ? esphome::TemperatureUnit::FAHRENHEIT : esphome::TemperatureUnit::CELSIUS);
         }
 
         void BalboaSpaWaterHeater::update()

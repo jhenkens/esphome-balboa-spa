@@ -103,8 +103,6 @@ namespace esphome
             uint8_t hour, minute;
             if (validate_time_format(value, hour, minute))
             {
-                // set_time() already skips redundant updates (see BalboaSpa::set_time),
-                // so no need to duplicate that check here.
                 this->spa_->set_time(hour, minute);
             }
             else
