@@ -93,8 +93,16 @@ namespace esphome
                 last_dead_log_time = 0;
             }
 
-            // Filter settings periodic update timer (every 5 minutes)
-            if (filtersettings_request_status == 2)
+            // A request the spa never answers would otherwise sit at "requested"
+            // forever. For the fault log that also blocks the filter settings
+            // request behind it.
+            check_request_timeout(config_request_status, config_requested_at_, config_request_retries_, "config");
+            check_request_timeout(faultlog_request_status, faultlog_requested_at_, faultlog_request_retries_, "fault log");
+            check_request_timeout(filtersettings_request_status, filtersettings_requested_at_, filtersettings_request_retries_, "filter settings");
+
+            // Filter settings periodic update timer (every 5 minutes). Also runs
+            // after an abandoned request, so it is tried again next period.
+            if (filtersettings_request_status >= 2)
             {
                 filtersettings_update_timer++;
                 if (filtersettings_update_timer >= 6000)
@@ -504,6 +512,25 @@ namespace esphome
                 ESP_LOGD(TAG, "Send 0x51 to toggle heat/rest");
                 enqueue_toggle(tiHeatingMode, ExpectedField::REST_MODE,
                                rest ? (uint8_t)HeatingMode::REST : (uint8_t)HeatingMode::READY, 3);
+            }
+        }
+
+        void BalboaSpa::check_request_timeout(char &status, uint32_t requested_at, uint8_t &retries, const char *name)
+        {
+            if (status != 1 || millis() - requested_at < REQUEST_TIMEOUT_MS)
+                return;
+
+            if (retries < REQUEST_MAX_RETRIES)
+            {
+                retries++;
+                status = 0; // ask again
+                ESP_LOGW(TAG, "Spa/request/%s: no response, retry %d/%d", name, retries, REQUEST_MAX_RETRIES);
+            }
+            else
+            {
+                retries = 0;
+                status = 3; // give up, unblock the request chain
+                ESP_LOGW(TAG, "Spa/request/%s: no response after %d retries, giving up", name, REQUEST_MAX_RETRIES);
             }
         }
 
@@ -991,20 +1018,23 @@ namespace esphome
                 send_typed(msg);
                 ESP_LOGD(TAG, "Spa/config/status: %s", "Getting config");
                 config_request_status = 1;
+                config_requested_at_ = millis();
             }
             else if (faultlog_request_status == 0)
             {
                 FaultLogRequest msg;
                 send_typed(msg);
                 faultlog_request_status = 1;
+                faultlog_requested_at_ = millis();
                 ESP_LOGD(TAG, "Spa/debug/faultlog_request_status: %s", "requesting fault log, #1");
             }
-            else if (filtersettings_request_status == 0 && faultlog_request_status == 2)
-            {
+            else if (filtersettings_request_status == 0 && faultlog_request_status != 1)
+            { // once the fault log request has finished, whether answered or abandoned
                 FilterConfigRequest msg;
                 send_typed(msg);
                 ESP_LOGD(TAG, "Spa/debug/filtersettings_request_status: %s", "requesting filter settings");
                 filtersettings_request_status = 1;
+                filtersettings_requested_at_ = millis();
             }
             else
             {
@@ -1040,6 +1070,7 @@ namespace esphome
             // Mark the request answered before the duplicate check: an unchanged
             // response is still a response.
             config_request_status = 2;
+            config_request_retries_ = 0;
 
             if (!update_if_changed(last_settings_message_, has_last_settings_message_, msg))
             {
@@ -1097,6 +1128,7 @@ namespace esphome
             // response is still a response, and the periodic refresh timer only
             // runs once the status is back at 2.
             filtersettings_request_status = 2;
+            filtersettings_request_retries_ = 0;
             filtersettings_update_timer = 0;
 
             if (!update_if_changed(last_filter_message_, has_last_filter_message_, msg))
@@ -1147,6 +1179,7 @@ namespace esphome
             // response is still a response, and the filter settings request waits
             // on this status.
             faultlog_request_status = 2;
+            faultlog_request_retries_ = 0;
 
             if (!update_if_changed(last_fault_payload_, last_fault_length_, has_last_fault_message_, input_buffer, input_buffer[0]))
             {

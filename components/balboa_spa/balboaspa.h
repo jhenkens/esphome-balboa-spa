@@ -170,6 +170,8 @@ namespace esphome
             };
             static const uint8_t CMD_QUEUE_SIZE = 8;
             static constexpr uint32_t RETRY_BACKOFF_MS = 5000;
+            static constexpr uint32_t REQUEST_TIMEOUT_MS = 10000; // how long to wait for a config/fault log/filter response
+            static constexpr uint8_t REQUEST_MAX_RETRIES = 3;     // re-requests before a request is abandoned
             static constexpr uint8_t PENDING_MSG_BUF_SIZE = 24;
             PendingCmd cmd_queue_[CMD_QUEUE_SIZE];
             uint8_t cmd_count_ = 0;
@@ -231,9 +233,15 @@ namespace esphome
             std::vector<std::function<void()>> highrange_listeners_;
             std::vector<std::function<void()>> client_id_listeners_;
 
-            char config_request_status = 0;           // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> further processed it
-            char faultlog_request_status = 0;         // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> further processed it
-            char filtersettings_request_status = 0;   // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> further processed it
+            char config_request_status = 0;         // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> abandoned (no response)
+            char faultlog_request_status = 0;       // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> abandoned (no response)
+            char filtersettings_request_status = 0; // stages: 0-> want it; 1-> requested it; 2-> got it; 3-> abandoned (no response)
+            uint32_t config_requested_at_ = 0;      // millis() when the request was last sent
+            uint32_t faultlog_requested_at_ = 0;
+            uint32_t filtersettings_requested_at_ = 0;
+            uint8_t config_request_retries_ = 0; // consecutive unanswered requests
+            uint8_t faultlog_request_retries_ = 0;
+            uint8_t filtersettings_request_retries_ = 0;
             char faultlog_update_timer = 0;           // temp logic so we only get the fault log once per 5 minutes
             uint16_t filtersettings_update_timer = 0; // timer for periodic filter settings requests (every 5 minutes)
 
@@ -257,6 +265,7 @@ namespace esphome
             void decodeState(const StatusMessage *msg);
             void decodeFilterSettings(const FilterStatusMessage *msg);
             void decodeFault();
+            void check_request_timeout(char &status, uint32_t requested_at, uint8_t &retries, const char *name);
 
             template <size_t N>
             bool update_if_changed(uint8_t (&last_buf)[N], bool &has_last, const void *msg)
