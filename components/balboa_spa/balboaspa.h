@@ -258,12 +258,6 @@ namespace esphome
             void decodeFilterSettings(const FilterStatusMessage *msg);
             void decodeFault();
 
-            // Shared change-detection helper for the four decode*() dedup checks below.
-            // Returns true (and stores a copy of the message) if it differs from the
-            // last message of this kind seen; returns false without touching any
-            // state if it is an exact duplicate of what was already stored.
-            //
-            // Fixed-size overload (status/settings/filter: always sizeof(T) bytes).
             template <size_t N>
             bool update_if_changed(uint8_t (&last_buf)[N], bool &has_last, const void *msg)
             {
@@ -273,9 +267,6 @@ namespace esphome
                 has_last = true;
                 return true;
             }
-            // Variable-length overload (fault log payload). Also compares against the
-            // previously-stored length rather than assuming it always matches the
-            // incoming message's length.
             bool update_if_changed(uint8_t *last_buf, size_t &last_len, bool &has_last, const void *data, size_t len)
             {
                 if (has_last && last_len == len && memcmp(last_buf, data, len) == 0)

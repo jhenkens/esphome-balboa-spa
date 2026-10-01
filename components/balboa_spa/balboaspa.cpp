@@ -797,24 +797,21 @@ namespace esphome
                         if (!check_msg_length<FilterStatusMessage>(input_buffer, "FilterStatusMessage")) break;
                         const FilterStatusMessage *msg = reinterpret_cast<const FilterStatusMessage *>(input_buffer);
                         ESP_LOGV(TAG, "FilterStatusMessage");
-                        if (update_if_changed(last_filter_message_, has_last_filter_message_, msg))
-                            decodeFilterSettings(msg);
+                        decodeFilterSettings(msg);
                         break;
                     }
                     case msControlConfig2: {
                         if (!check_msg_length<ControlConfig2Response>(input_buffer, "ControlConfig2Response")) break;
                         ESP_LOGV(TAG, "ControlConfig2Response");
                         const ControlConfig2Response *msg = reinterpret_cast<const ControlConfig2Response *>(input_buffer);
-                        if (update_if_changed(last_settings_message_, has_last_settings_message_, msg))
-                            decodeSettings(msg);
+                        decodeSettings(msg);
                         break;
                     }
                     default:
-                        if(found_msg_type == 0x06){ 
+                        if(found_msg_type == 0x06){
                             send_message();
                         }
-                        else if (found_msg_type == 0x28 && check_fault_length(input_buffer) &&
-                                 update_if_changed(last_fault_payload_, last_fault_length_, has_last_fault_message_, input_buffer, length))
+                        else if (found_msg_type == 0x28)
                         {
                             decodeFault();
                         } else{
@@ -983,6 +980,12 @@ namespace esphome
 
         void BalboaSpa::decodeSettings(const ControlConfig2Response *msg)
         {
+            if (!update_if_changed(last_settings_message_, has_last_settings_message_, msg))
+            {
+                ESP_LOGV(TAG, "ControlConfig2Response unchanged; skipping decode");
+                return;
+            }
+
             memcpy(&spaConfig, msg, sizeof(ControlConfig2Response));
             ESP_LOGD(TAG, "Spa/config: pumps=%d/%d/%d/%d/%d/%d lights=%d/%d circ=%d blower=%d mister=%d aux=%d/%d",
                      spaConfig.pump1, spaConfig.pump2, spaConfig.pump3,
@@ -995,6 +998,7 @@ namespace esphome
 
         void BalboaSpa::decodeState(const StatusMessage *msg)
         {
+            last_status_received_ms_ = millis();
             if (!update_if_changed(last_status_message_, has_last_status_message_, msg))
             {
                 ESP_LOGV(TAG, "StatusMessage unchanged; skipping decode");
@@ -1025,12 +1029,16 @@ namespace esphome
 
             spaState = newState;
             prune_and_rebuild();
-
-            last_status_received_ms_ = millis();
         }
 
         void BalboaSpa::decodeFilterSettings(const FilterStatusMessage *msg)
         {
+            if (!update_if_changed(last_filter_message_, has_last_filter_message_, msg))
+            {
+                ESP_LOGV(TAG, "FilterStatusMessage unchanged; skipping decode");
+                return;
+            }
+
             spaFilterSettings.filter1_hour = input_buffer[4];
             spaFilterSettings.filter1_minute = input_buffer[5];
             spaFilterSettings.filter1_duration_hour = input_buffer[6];
@@ -1067,8 +1075,16 @@ namespace esphome
 
         void BalboaSpa::decodeFault()
         {
-            // Accesses up to input_buffer[9]; check_fault_length() at the call site
-            // already guarantees at least 10 bytes before we get here.
+            // Accesses up to input_buffer[9] — require at least 10 bytes.
+            if (!check_fault_length(input_buffer))
+                return;
+
+            if (!update_if_changed(last_fault_payload_, last_fault_length_, has_last_fault_message_, input_buffer, input_buffer[0]))
+            {
+                ESP_LOGV(TAG, "FaultLog unchanged; skipping decode");
+                return;
+            }
+
             spaFaultLog.total_entries = input_buffer[4];
             spaFaultLog.current_entry = input_buffer[5];
             spaFaultLog.fault_code = input_buffer[6];
