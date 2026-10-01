@@ -312,6 +312,7 @@ Enables/disables the secondary filter cycle. Turning ON requires filter 2 start 
 | `fault_log_time` | ISO 8601 timestamp of fault |
 | `reminder` | Active maintenance reminder |
 | `component_version` | Component version string |
+| `spa_config` | Hardware configuration reported by the spa, as JSON: raw values for `pump1`–`pump6`, `light1`, `light2`, `circ`, `blower`, `mister`, `aux1`, `aux2` (diagnostic) |
 
 ### Buttons
 

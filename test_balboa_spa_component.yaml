@@ -146,6 +146,8 @@ text_sensor:
       name: "Reminder"
     component_version:
       name: "Component Version"
+    spa_config:
+      name: "Spa Config"
 
 button:
   - platform: balboa_spa

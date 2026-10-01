@@ -54,6 +54,7 @@ namespace esphome
             float get_setup_priority() const override;
 
             ControlConfig2Response get_current_config();
+            bool has_config() const { return has_last_settings_message_; } // false until the spa has reported its config
             SpaState *get_current_state();
             SpaFilterSettings *get_current_filter_settings();
             SpaFaultLog *get_current_fault_log();

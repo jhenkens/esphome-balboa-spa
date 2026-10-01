@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import text_sensor
+from esphome.const import ENTITY_CATEGORY_DIAGNOSTIC
 
 from .. import CONF_SPA_ID, BalboaSpa, balboa_spa_ns
 
@@ -23,6 +24,9 @@ ComponentVersionTextSensor = balboa_spa_ns.class_(
     "ComponentVersionTextSensor", text_sensor.TextSensor
 )
 ClientIdTextSensor = balboa_spa_ns.class_("ClientIdTextSensor", text_sensor.TextSensor)
+SpaConfigTextSensor = balboa_spa_ns.class_(
+    "SpaConfigTextSensor", text_sensor.TextSensor
+)
 
 CONF_SPA_TIME = "spa_time"
 CONF_FILTER1_CONFIG = "filter1_config"
@@ -32,6 +36,7 @@ CONF_FAULT_LOG_TIME = "fault_log_time"
 CONF_REMINDER = "reminder"
 CONF_COMPONENT_VERSION = "component_version"
 CONF_CLIENT_ID = "client_id"
+CONF_SPA_CONFIG = "spa_config"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -59,6 +64,11 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_CLIENT_ID): text_sensor.text_sensor_schema(
             ClientIdTextSensor, icon="mdi:account"
+        ),
+        cv.Optional(CONF_SPA_CONFIG): text_sensor.text_sensor_schema(
+            SpaConfigTextSensor,
+            icon="mdi:information-outline",
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
     }
 )
@@ -88,5 +98,8 @@ async def to_code(config):
         var = await text_sensor.new_text_sensor(conf)
         cg.add(var.set_parent(parent))
     if conf := config.get(CONF_CLIENT_ID):
+        var = await text_sensor.new_text_sensor(conf)
+        cg.add(var.set_parent(parent))
+    if conf := config.get(CONF_SPA_CONFIG):
         var = await text_sensor.new_text_sensor(conf)
         cg.add(var.set_parent(parent))
