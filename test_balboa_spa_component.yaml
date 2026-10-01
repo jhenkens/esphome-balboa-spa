@@ -27,7 +27,7 @@ switch:
       name: Second Lights
     blower:
       name: Blower
-    highrange:
+    high_range:
       name: Temperature Mode
     filter2:
       name: "Filter 2"
@@ -86,13 +86,13 @@ sensor:
       unit_of_measurement: "°F"
     blower:
       name: Blower
-    highrange:
+    high_range:
       name: High Range
     circulation:
       name: Circulation
-    restmode:
+    rest_mode:
       name: Rest Mode
-    heatstate:
+    heat_state:
       name: Heat State
     spa_temp_scale:
       name: Spa Temp Scale
@@ -112,13 +112,13 @@ binary_sensor:
     balboa_spa_id: test_spa
     blower:
       name: Blower
-    highrange:
+    high_range:
       name: High Range
     circulation:
       name: Circulation Pump
-    restmode:
+    rest_mode:
       name: Rest Mode
-    heatstate:
+    heat_state:
       name: Heat State
     connected:
       name: Connected

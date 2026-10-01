@@ -16,10 +16,10 @@ SpaFaultLogSensor = balboa_spa_ns.class_("BalboaSpaFaultLogSensors", sensor.Sens
 SpaFaultLogSensorTypeEnum = SpaFaultLogSensor.enum("BalboaSpaFaultLogSensorType", True)
 
 CONF_BLOWER = "blower"
-CONF_HIGHRANGE = "highrange"
+CONF_HIGH_RANGE = "high_range"
 CONF_CIRCULATION = "circulation"
-CONF_RESTMODE = "restmode"
-CONF_HEATSTATE = "heatstate"
+CONF_REST_MODE = "rest_mode"
+CONF_HEAT_STATE = "heat_state"
 CONF_CURRENT_TEMP = "current_temp"
 CONF_TARGET_TEMP = "target_temp"
 CONF_SPA_TEMP_SCALE = "spa_temp_scale"
@@ -36,7 +36,7 @@ CONFIG_SCHEMA = cv.Schema(
             SpaSensor,
             icon="mdi:fan",
         ),
-        cv.Optional(CONF_HIGHRANGE): sensor.sensor_schema(
+        cv.Optional(CONF_HIGH_RANGE): sensor.sensor_schema(
             SpaSensor,
             icon="mdi:thermometer-lines",
         ),
@@ -44,11 +44,11 @@ CONFIG_SCHEMA = cv.Schema(
             SpaSensor,
             icon="mdi:pump",
         ),
-        cv.Optional(CONF_RESTMODE): sensor.sensor_schema(
+        cv.Optional(CONF_REST_MODE): sensor.sensor_schema(
             SpaSensor,
             icon="mdi:sleep",
         ),
-        cv.Optional(CONF_HEATSTATE): sensor.sensor_schema(
+        cv.Optional(CONF_HEAT_STATE): sensor.sensor_schema(
             SpaSensor,
             icon="mdi:fire",
         ),
@@ -98,10 +98,10 @@ async def to_code(config):
 
     for sensor_type in [
         CONF_BLOWER,
-        CONF_HIGHRANGE,
+        CONF_HIGH_RANGE,
         CONF_CIRCULATION,
-        CONF_RESTMODE,
-        CONF_HEATSTATE,
+        CONF_REST_MODE,
+        CONF_HEAT_STATE,
         CONF_CURRENT_TEMP,
         CONF_TARGET_TEMP,
         CONF_SPA_TEMP_SCALE,
